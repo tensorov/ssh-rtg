@@ -37,7 +37,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install 'ansible-core>=2.13,<2.19' ansible-lint yamllint
-          ansible-galaxy collection install community.crypto ansible.posix
+          ansible-galaxy collection install community.crypto ansible.posix community.general
 
       - name: Run yamllint
         run: yamllint --strict ansible/
