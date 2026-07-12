@@ -44,7 +44,7 @@ jobs:
 
       - name: Run ansible-lint
         working-directory: ansible
-        run: ansible-lint --config-file .ansible-lint .
+        run: ansible-lint --config-file ../.ansible-lint .
 
       - name: Check playbook syntax
         run: |
