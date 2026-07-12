@@ -1,0 +1,53 @@
+---
+name: lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ansible/**"
+      - ".github/workflows/lint.yml"
+      - ".ansible-lint"
+      - ".yamllint"
+  pull_request:
+    branches: [main]
+    paths:
+      - "ansible/**"
+      - ".github/workflows/lint.yml"
+      - ".ansible-lint"
+      - ".yamllint"
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tools
+        run: |
+          pip install --upgrade pip
+          pip install ansible-core yamllint
+
+      - name: Run yamllint
+        run: yamllint --strict ansible/
+
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@v24
+        with:
+          args: --config-file .ansible-lint ansible/
+
+      - name: Check playbook syntax
+        run: |
+          cd ansible
+          ansible-playbook --syntax-check playbooks/deploy-client.yml
+          ansible-playbook --syntax-check playbooks/deploy-server.yml
