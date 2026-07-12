@@ -1,0 +1,3 @@
+---
+# deploy-server.yml — deploy reverse SSH tunnel server on a public VPS.
+# Applies the ssh-tunnel-server role to accept and route tunnel connections.

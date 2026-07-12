@@ -1,0 +1,3 @@
+---
+# ssh-tunnel-client tasks — deploy and manage reverse SSH tunnel on NAT-side host.
+# Entry point that delegates to config.yml and additional task files.

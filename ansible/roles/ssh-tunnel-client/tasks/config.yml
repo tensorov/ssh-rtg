@@ -1,0 +1,3 @@
+---
+# ssh-tunnel-client — configuration tasks.
+# Generates tunnel config from variables, validates SSH key and gateway reachability.

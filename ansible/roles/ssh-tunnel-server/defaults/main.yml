@@ -1,0 +1,14 @@
+---
+# ssh-tunnel-server defaults
+tunnel_server_user: "tunnel"
+tunnel_server_ssh_port: 22
+tunnel_gateway_ports: true
+tunnel_allow_tcp_forwarding: true
+
+# Traefik integration (optional)
+traefik_enable: false
+traefik_tcp_routes_dir: "/opt/traefik/dynamic"
+
+# Firewall ports to open for tunnel listener
+tunnel_listener_ports:
+  - 2222

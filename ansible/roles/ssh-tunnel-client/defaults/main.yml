@@ -1,0 +1,14 @@
+---
+# ssh-tunnel-client defaults
+tunnel_gateway_host: "gateway.example.com"
+tunnel_gateway_port: 22
+tunnel_gateway_user: "tunnel"
+tunnel_ssh_key_path: "/root/.ssh/id_reverse_tunnel"
+tunnel_poll_interval: 30
+
+# List of tunnel mappings: each entry maps a VPS port → local target
+# tunnel_mappings:
+#   - remote_port: 8080
+#     local_host: localhost
+#     local_port: 80
+tunnel_mappings: []

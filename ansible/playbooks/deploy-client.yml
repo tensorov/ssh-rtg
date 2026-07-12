@@ -1,0 +1,3 @@
+---
+# deploy-client.yml — deploy reverse SSH tunnel client on a NAT-side host.
+# Applies the ssh-tunnel-client role to establish outbound tunnels.

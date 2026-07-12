@@ -1,0 +1,14 @@
+---
+# Sample group variables — override per environment.
+# See role defaults for the full variable reference.
+
+# Gateway connection
+tunnel_gateway_host: "gateway.example.com"
+tunnel_gateway_port: 22
+tunnel_gateway_user: "tunnel"
+
+# Tunnel mappings: remote_port → local service
+tunnel_mappings:
+  - remote_port: 8080
+    local_host: localhost
+    local_port: 80
