@@ -1,4 +1,75 @@
 #!/bin/bash
 # {{ ansible_managed }}
-# reverse-ssh-gateway — firewall rules for tunnel forwarding.
+# reverse-ssh-gateway — firewall rules for tunnel forwarding ports.
 # This file is managed by Ansible — manual changes will be overwritten.
+#
+# Usage: sudo bash {{ ssh_tunnel_traefik_routes_dir }}firewall-rules.sh
+#        (--dry-run to preview without applying)
+
+set -euo pipefail
+
+LOGGER="logger -t reverse-ssh-gateway-firewall"
+DRY_RUN=false
+FIREWALL_TYPE="{{ ssh_tunnel_firewall_type }}"
+ALLOWED_CIDR="{{ ssh_tunnel_allowed_remote_hosts }}"
+
+# Parse --dry-run flag
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+  esac
+done
+
+run_cmd() {
+  if [ "$DRY_RUN" = true ]; then
+    echo "[DRY-RUN] $*"
+  else
+    $LOGGER "Executing: $*"
+    eval "$*"
+  fi
+}
+
+case "$FIREWALL_TYPE" in
+  ufw)
+    $LOGGER "Configuring UFW for tunnel ports"
+{% if ssh_tunnel_ports | length == 0 %}
+    $LOGGER "WARNING: ssh_tunnel_ports is empty — no ports to open"
+    echo "WARNING: ssh_tunnel_ports is empty — no ports to open" >&2
+{% else %}
+{% for item in ssh_tunnel_ports %}
+    run_cmd "ufw allow proto tcp from $ALLOWED_CIDR to any port {{ item.remote_port }} comment '{{ item.description | default("tunnel-" ~ item.remote_port) }}'"
+{% endfor %}
+{% endif %}
+    run_cmd "ufw reload"
+    ;;
+
+  nftables)
+    $LOGGER "Configuring nftables for tunnel ports"
+    NFT_TABLE="reverse-ssh-tunnel"
+
+    # Ensure the table exists
+    run_cmd "nft add table inet $NFT_TABLE 2>/dev/null || true"
+
+    # Ensure the input chain exists with a rule to accept established traffic
+    run_cmd "nft add chain inet $NFT_TABLE input { type filter hook input priority 0 \\; policy accept \\;} 2>/dev/null || true"
+    run_cmd "nft add rule inet $NFT_TABLE input ct state established,related accept 2>/dev/null || true"
+
+{% if ssh_tunnel_ports | length == 0 %}
+    $LOGGER "WARNING: ssh_tunnel_ports is empty — no nftables rules to add"
+    echo "WARNING: ssh_tunnel_ports is empty — no nftables rules to add" >&2
+{% else %}
+{% for item in ssh_tunnel_ports %}
+    run_cmd "nft add rule inet $NFT_TABLE input tcp dport {{ item.remote_port }} accept comment '{{ item.description | default("tunnel-" ~ item.remote_port) }}'"
+{% endfor %}
+{% endif %}
+    ;;
+
+  *)
+    $LOGGER "ERROR: Unknown firewall type '$FIREWALL_TYPE'"
+    echo "ERROR: Unknown firewall type '$FIREWALL_TYPE'. Supported: ufw, nftables." >&2
+    exit 1
+    ;;
+esac
+
+$LOGGER "Firewall rules applied successfully"
+echo "Firewall rules applied successfully"

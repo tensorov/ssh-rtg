@@ -1,3 +1,20 @@
 # {{ ansible_managed }}
 # reverse-ssh-gateway — systemd service unit for tunnel client.
 # Managed by Ansible — manual changes will be overwritten.
+
+[Unit]
+Description=Reverse SSH Tunnel Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ ssh_tunnel_user }}
+ExecStart=/usr/local/bin/ssh-tunnel.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,14 +1,27 @@
 ---
-# ssh-tunnel-server defaults
-tunnel_server_user: "tunnel"
-tunnel_server_ssh_port: 22
-tunnel_gateway_ports: true
-tunnel_allow_tcp_forwarding: true
+# ssh-tunnel-server defaults — VPS-side host configuration.
+# Override per environment in group_vars or inventory.
 
-# Traefik integration (optional)
-traefik_enable: false
-traefik_tcp_routes_dir: "/opt/traefik/dynamic"
+# List of tunnel port mappings: each entry creates a Traefik TCP route
+# and opens a firewall port. The tunnel client on the NAT side connects
+# these ports via reverse SSH.
+#   local_port:   entrypoint port Traefik listens on (must match traefik static config)
+#   remote_port:  port the SSH tunnel listens on the VPS (127.0.0.1)
+#   description:  human-readable label for the tunnel (e.g. "Homepage HTTP")
+ssh_tunnel_ports: []
 
-# Firewall ports to open for tunnel listener
-tunnel_listener_ports:
-  - 2222
+# System user created for SSH tunnel logins from clients
+ssh_tunnel_server_user: "tunnel"
+
+# Traefik dynamic config paths
+ssh_tunnel_traefik_routes_dir: "/etc/traefik/dynamic/tunnels/"
+ssh_tunnel_traefik_config_file: "{{ ssh_tunnel_traefik_routes_dir }}tcp-tunnels.yml"
+
+# Firewall backend: "ufw" or "nftables"
+ssh_tunnel_firewall_type: "ufw"
+
+# Enable net.ipv4.ip_forward on the VPS (required for tunnel traffic routing)
+ssh_tunnel_enable_ip_forwarding: true
+
+# Restrict tunnel listener to specific source CIDR (default: all)
+ssh_tunnel_allowed_remote_hosts: "0.0.0.0/0"

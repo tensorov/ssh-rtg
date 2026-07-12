@@ -1,17 +1,12 @@
 ---
-dependencies: []
 galaxy_info:
   author: tensorov
-  description: Reverse SSH tunnel server role for public VPS gateway
+  description: Reverse SSH tunnel server role — VPS-side host
   license: MIT
-  min_ansible_version: "2.18"
+  min_ansible_version: "2.14"
   platforms:
     - name: Ubuntu
       versions:
-        - "22.04"
-        - "24.04"
-  galaxy_tags:
-    - ssh
-    - tunnel
-    - gateway
-    - traefik
+        - jammy
+        - noble
+dependencies: []

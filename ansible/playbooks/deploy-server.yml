@@ -1,3 +1,17 @@
 ---
 # deploy-server.yml — deploy reverse SSH tunnel server on a public VPS.
 # Applies the ssh-tunnel-server role to accept and route tunnel connections.
+#
+# Usage:
+#   ansible-playbook -i inventories/production/hosts.yml ansible/playbooks/deploy-server.yml
+#
+# Required variables:
+#   ssh_tunnel_ports — list of tunnels to configure (see role defaults)
+
+- name: Deploy reverse SSH tunnel server
+  hosts: gateway
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: ssh-tunnel-server

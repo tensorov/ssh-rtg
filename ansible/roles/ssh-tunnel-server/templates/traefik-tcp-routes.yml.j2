@@ -1,3 +1,38 @@
 # {{ ansible_managed }}
 # reverse-ssh-gateway — Traefik TCP route configuration for tunneled services.
 # This file is managed by Ansible — manual changes will be overwritten.
+#
+# REQUIREMENT: Each entryPoint (tunnel-<port>) below must also be defined in
+# Traefik's static configuration (traefik.yml or CLI flags) under:
+#   entryPoints:
+#     tunnel-<port>:
+#       address: ":<port>"
+#
+# Example static config snippet:
+#   entryPoints:
+#     tunnel-8080:
+#       address: ":8080"
+#
+{% if ssh_tunnel_ports | length == 0 %}
+# WARNING: ssh_tunnel_ports is empty — no TCP routes configured.
+# Populate ssh_tunnel_ports to generate tunnel routes.
+{% else %}
+tcp:
+  routers:
+{% for item in ssh_tunnel_ports %}
+    # {{ item.description | default("tunnel-" ~ item.remote_port) }}
+    tunnel-{{ item.remote_port }}:
+      entryPoints:
+        - "tunnel-{{ item.remote_port }}"
+      rule: "HostSNI(`*`)"
+      service: tunnel-{{ item.remote_port }}
+{% endfor %}
+
+  services:
+{% for item in ssh_tunnel_ports %}
+    tunnel-{{ item.remote_port }}:
+      loadBalancer:
+        servers:
+          - address: "127.0.0.1:{{ item.remote_port }}"
+{% endfor %}
+{% endif %}

@@ -1,2 +1,8 @@
 ---
 # ssh-tunnel-client handlers — restart tunnel service on config changes.
+
+- name: restart-ssh-tunnel
+  ansible.builtin.systemd:
+    name: "{{ ssh_tunnel_service_name }}"
+    state: restarted
+    daemon_reload: true

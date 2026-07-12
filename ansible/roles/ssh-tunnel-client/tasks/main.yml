@@ -1,3 +1,68 @@
 ---
 # ssh-tunnel-client tasks — deploy and manage reverse SSH tunnel on NAT-side host.
-# Entry point that delegates to config.yml and additional task files.
+# Entry point that handles user setup, SSH key provisioning, template deployment,
+# service registration, and delegates to config.yml for auxiliary config files.
+
+- name: Create tunnel system user
+  ansible.builtin.user:
+    name: "{{ ssh_tunnel_user }}"
+    system: true
+    create_home: true
+    shell: /bin/bash
+    state: present
+
+- name: Ensure .ssh directory exists for tunnel user
+  ansible.builtin.file:
+    path: "/home/{{ ssh_tunnel_user }}/.ssh"
+    state: directory
+    mode: "0700"
+    owner: "{{ ssh_tunnel_user }}"
+    group: "{{ ssh_tunnel_user }}"
+
+- name: Copy SSH private key from Ansible control node
+  ansible.builtin.copy:
+    src: "{{ ssh_tunnel_private_key_src }}"
+    dest: "{{ ssh_tunnel_key_file }}"
+    owner: "{{ ssh_tunnel_user }}"
+    group: "{{ ssh_tunnel_user }}"
+    mode: "0600"
+  when:
+    - not (ssh_tunnel_generate_key | default(false))
+    - ssh_tunnel_private_key_src | length > 0
+  no_log: true
+
+- name: Generate Ed25519 SSH key pair on target
+  community.crypto.openssh_keypair:
+    path: "{{ ssh_tunnel_key_file }}"
+    owner: "{{ ssh_tunnel_user }}"
+    group: "{{ ssh_tunnel_user }}"
+    type: ed25519
+  when: ssh_tunnel_generate_key | default(false)
+
+- name: Template tunnel wrapper script
+  ansible.builtin.template:
+    src: tunnel.sh.j2
+    dest: /usr/local/bin/ssh-tunnel.sh
+    mode: "0755"
+    owner: root
+    group: root
+  notify: restart-ssh-tunnel
+
+- name: Template systemd service unit
+  ansible.builtin.template:
+    src: ssh-tunnel.service.j2
+    dest: "/etc/systemd/system/{{ ssh_tunnel_service_name }}.service"
+    mode: "0644"
+    owner: root
+    group: root
+  notify: restart-ssh-tunnel
+
+- name: Reload systemd and enable tunnel service
+  ansible.builtin.systemd:
+    name: "{{ ssh_tunnel_service_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Include auxiliary configuration tasks
+  ansible.builtin.include_tasks: config.yml

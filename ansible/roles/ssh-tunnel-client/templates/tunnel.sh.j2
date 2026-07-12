@@ -1,5 +1,102 @@
 #!/bin/bash
 # {{ ansible_managed }}
-# reverse-ssh-gateway — tunnel client script (Ansible-managed)
-# Establishes reverse SSH tunnels using configuration from ansible variables.
+# reverse-ssh-gateway — tunnel client script
+# Establishes reverse SSH tunnels with auto-reconnect and exponential backoff.
 # This file is managed by Ansible — manual changes will be overwritten.
+
+set -euo pipefail
+
+# ===========================================================================
+# Configuration (populated by Ansible template)
+# ===========================================================================
+TUNNEL_USER="{{ ssh_tunnel_user }}"
+KEY_FILE="{{ ssh_tunnel_key_file }}"
+JUMP_HOST="{{ ssh_tunnel_jump_host }}"
+LOCAL_HOST="{{ ssh_tunnel_local_host }}"
+SSH_PORT={{ ssh_tunnel_ssh_port }}
+SERVER_ALIVE_INTERVAL={{ ssh_tunnel_server_alive_interval }}
+SERVER_ALIVE_COUNT_MAX={{ ssh_tunnel_server_alive_count_max }}
+
+# Build SSH remote-forward flags from port list
+{% if ssh_tunnel_ports %}
+R_FLAGS="\
+{% for p in ssh_tunnel_ports %}    -R {{ p.remote_port }}:{{ ssh_tunnel_local_host }}:{{ p.local_port }} \
+{% endfor %}"
+{% else %}
+R_FLAGS=""
+{% endif %}
+
+# ===========================================================================
+# Logging
+# ===========================================================================
+log() {
+    logger -t tunnel "$@"
+}
+
+# ===========================================================================
+# Cleanup handler — kill background socat processes on exit
+# ===========================================================================
+cleanup() {
+    log "Shutting down tunnel client"
+    {% if ssh_tunnel_udp_bridges %}
+    # Terminate any running socat UDP→TCP bridge processes
+    {% for b in ssh_tunnel_udp_bridges %}
+    pkill -f "socat.*UDP-RECVFROM:{{ b.local_port }}" 2>/dev/null || true
+    {% endfor %}
+    {% endif %}
+    exit 0
+}
+trap cleanup SIGTERM SIGINT
+
+# ===========================================================================
+# UDP→TCP socat bridges (optional)
+# Each process listens on UDP local_port and forwards to TCP through the SSH
+# tunnel. A counterpart socat on the VPS side converts TCP back to UDP.
+# ===========================================================================
+{% if ssh_tunnel_udp_bridges %}
+{% for b in ssh_tunnel_udp_bridges %}
+socat UDP4-RECVFROM:{{ b.local_port }},fork TCP4:127.0.0.1:{{ b.remote_port }} &
+log "UDP bridge started: :{{ b.local_port }}/udp → tunnel :{{ b.remote_port }}/tcp"
+{% endfor %}
+{% endif %}
+
+# ===========================================================================
+# Auto-reconnect SSH loop with exponential backoff
+# Backoff progression: 1s → 2s → 4s → 8s → 16s → 30s → 60s (cap)
+# On clean exit (e.g. manual service restart), backoff resets to 1s.
+# ===========================================================================
+BACKOFF=1
+MAX_BACKOFF=60
+
+log "Starting reverse SSH tunnel to ${JUMP_HOST}:${SSH_PORT}"
+
+while true; do
+    log "Connecting to ${JUMP_HOST}..."
+
+    if ssh \
+        -i "${KEY_FILE}" \
+        -p "${SSH_PORT}" \
+        -o ServerAliveInterval="${SERVER_ALIVE_INTERVAL}" \
+        -o ServerAliveCountMax="${SERVER_ALIVE_COUNT_MAX}" \
+        -o ExitOnForwardFailure=yes \
+        -o StrictHostKeyChecking=accept-new \
+        -o ControlMaster=auto \
+        -o ControlPath="/tmp/ssh-tunnel-{{ ssh_tunnel_service_name }}.sock" \
+        -o ControlPersist=300 \
+        -N \
+        ${R_FLAGS} \
+        "${JUMP_HOST}"; then
+
+        log "Connection exited cleanly — will reconnect immediately"
+        BACKOFF=1
+    else
+        log "Connection failed or dropped. Reconnecting in ${BACKOFF}s..."
+        sleep "${BACKOFF}"
+
+        # Exponential backoff with a ceiling
+        BACKOFF=$((BACKOFF * 2))
+        if [ "${BACKOFF}" -gt "${MAX_BACKOFF}" ]; then
+            BACKOFF=${MAX_BACKOFF}
+        fi
+    fi
+done

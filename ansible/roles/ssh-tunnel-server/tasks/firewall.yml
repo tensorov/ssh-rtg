@@ -1,3 +1,47 @@
 ---
 # ssh-tunnel-server — firewall configuration tasks.
 # Opens required ports for tunnel listener and forwarded service ports.
+# Supports both UFW and nftables backends.
+
+- name: Assert firewall type is supported
+  ansible.builtin.assert:
+    that:
+      - ssh_tunnel_firewall_type in ("ufw", "nftables")
+    fail_msg: "ssh_tunnel_firewall_type must be 'ufw' or 'nftables', got '{{ ssh_tunnel_firewall_type }}'"
+
+- name: Open UFW ports for each tunnel (community module)
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "{{ item.remote_port }}"
+    from_ip: "{{ ssh_tunnel_allowed_remote_hosts }}"
+    comment: "{{ item.description | default('tunnel-' ~ item.remote_port) }}"
+  loop: "{{ ssh_tunnel_ports }}"
+  when: ssh_tunnel_firewall_type == "ufw"
+  notify: reload ufw
+  tags:
+    - ufw
+
+- name: Ensure UFW is enabled (if using UFW)
+  community.general.ufw:
+    state: enabled
+  when:
+    - ssh_tunnel_firewall_type == "ufw"
+    - ssh_tunnel_ports | length > 0
+
+- name: Template nftables firewall script
+  ansible.builtin.template:
+    src: firewall-rules.sh.j2
+    dest: "{{ ssh_tunnel_traefik_routes_dir }}firewall-rules.sh"
+    mode: "0755"
+    owner: root
+    group: root
+  when: ssh_tunnel_firewall_type == "nftables"
+
+- name: Apply nftables firewall rules
+  ansible.builtin.command:
+    cmd: "{{ ssh_tunnel_traefik_routes_dir }}firewall-rules.sh"
+  changed_when: true
+  when:
+    - ssh_tunnel_firewall_type == "nftables"
+    - ssh_tunnel_ports | length > 0

@@ -1,3 +1,45 @@
 ---
 # ssh-tunnel-server tasks — configure VPS to accept reverse SSH tunnels.
-# Creates tunnel user, configures SSH, and sets up TCP routing.
+# Creates tunnel user, configures Traefik TCP routes, firewall, and sysctl.
+
+- name: Create Traefik dynamic config directory
+  ansible.builtin.file:
+    path: "{{ ssh_tunnel_traefik_routes_dir }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+  notify: restart traefik
+
+- name: Template Traefik TCP route configuration
+  ansible.builtin.template:
+    src: traefik-tcp-routes.yml.j2
+    dest: "{{ ssh_tunnel_traefik_config_file }}"
+    mode: "0644"
+    owner: root
+    group: root
+  notify: restart traefik
+
+- name: Include firewall configuration
+  ansible.builtin.include_tasks:
+    file: firewall.yml
+  tags:
+    - firewall
+
+- name: Enable IP forwarding in sysctl.conf
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: true
+    state: present
+    reload: true
+  when: ssh_tunnel_enable_ip_forwarding | bool
+
+- name: Create tunnel system user
+  ansible.builtin.user:
+    name: "{{ ssh_tunnel_server_user }}"
+    state: present
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+    comment: "Reverse SSH tunnel user"

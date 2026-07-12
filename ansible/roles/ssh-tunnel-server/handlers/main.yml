@@ -1,2 +1,22 @@
 ---
-# ssh-tunnel-server handlers — restart SSH daemon and firewall on config changes.
+# ssh-tunnel-server handlers — restart services on config changes.
+
+- name: restart traefik
+  ansible.builtin.systemd:
+    name: traefik
+    state: restarted
+    daemon_reload: true
+  when: traefik_enable | default(false) | bool
+
+- name: reload ufw
+  ansible.builtin.command:
+    cmd: ufw reload
+  changed_when: true
+  when: ssh_tunnel_firewall_type == "ufw"
+
+- name: restart ssh-tunnel
+  ansible.builtin.systemd:
+    name: ssh-tunnel
+    state: restarted
+    daemon_reload: true
+  when: ssh_tunnel_ports | length > 0

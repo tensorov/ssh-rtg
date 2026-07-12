@@ -1,3 +1,31 @@
 ---
-# ssh-tunnel-client — configuration tasks.
-# Generates tunnel config from variables, validates SSH key and gateway reachability.
+# ssh-tunnel-client — auxiliary configuration tasks.
+# Writes a flat configuration summary for non-Ansible debugging and
+# operational visibility.
+
+- name: Ensure tunnel configuration directory exists
+  ansible.builtin.file:
+    path: "/etc/{{ ssh_tunnel_service_name }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Write tunnel configuration summary file
+  ansible.builtin.copy:
+    content: |
+      # Tunnel configuration summary (Ansible-managed)
+      # This file is informational only — the tunnel script reads its
+      # configuration from the embedded Ansible template variables.
+      JUMP_HOST={{ ssh_tunnel_jump_host }}
+      TUNNEL_USER={{ ssh_tunnel_user }}
+      KEY_FILE={{ ssh_tunnel_key_file }}
+      SSH_PORT={{ ssh_tunnel_ssh_port }}
+      LOCAL_HOST={{ ssh_tunnel_local_host }}
+      TCP_PORTS={% for p in ssh_tunnel_ports %}{{ p.local_port }}:{{ p.remote_port }}{% if not loop.last %},{% endif %}{% endfor %}
+      UDP_BRIDGES={% for b in ssh_tunnel_udp_bridges %}{{ b.local_port }}:{{ b.remote_port }}{% if not loop.last %},{% endif %}{% endfor %}
+    dest: "/etc/{{ ssh_tunnel_service_name }}/tunnel.conf"
+    mode: "0644"
+    owner: root
+    group: root
+  notify: restart-ssh-tunnel

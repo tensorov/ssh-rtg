@@ -1,14 +1,81 @@
 ---
-# ssh-tunnel-client defaults
-tunnel_gateway_host: "gateway.example.com"
-tunnel_gateway_port: 22
-tunnel_gateway_user: "tunnel"
-tunnel_ssh_key_path: "/root/.ssh/id_reverse_tunnel"
-tunnel_poll_interval: 30
+# === ssh-tunnel-client role defaults ===
+# All variables can be overridden at the playbook, inventory, or group_vars level.
 
-# List of tunnel mappings: each entry maps a VPS port → local target
-# tunnel_mappings:
-#   - remote_port: 8080
-#     local_host: localhost
-#     local_port: 80
-tunnel_mappings: []
+# ---------------------------------------------------------------------------
+# TCP port forwards — list of maps with {local_port, remote_port, description}
+# Each entry maps a local TCP port to a remote TCP port on the jump host.
+#   local_port:  port on the NAT-side host to expose outward
+#   remote_port: port on the VPS jump host that tunnels back here
+#   description: optional human-readable label
+# Example:
+#   ssh_tunnel_ports:
+#     - local_port: 22
+#       remote_port: 2022
+#       description: "SSH into NAT'd host"
+#     - local_port: 8080
+#       remote_port: 8080
+#       description: "Web service behind NAT"
+# ---------------------------------------------------------------------------
+ssh_tunnel_ports: []
+
+# ---------------------------------------------------------------------------
+# Jump host — the public VPS that accepts the reverse SSH connection.
+# Format: "user@hostname" or "user@ip-address"
+# Example: "tunnel@vps.example.com"
+# ---------------------------------------------------------------------------
+ssh_tunnel_jump_host: ""
+
+# ---------------------------------------------------------------------------
+# Local bind address for forwarded ports.
+# Use "0.0.0.0" to bind on all interfaces (less secure) or
+# "127.0.0.1" to bind only locally on the NAT-side host.
+# ---------------------------------------------------------------------------
+ssh_tunnel_local_host: "127.0.0.1"
+
+# ---------------------------------------------------------------------------
+# UDP→TCP bridge definitions — list of maps with {local_port, remote_port, description}
+# The tunnel script starts a socat(1) process for each entry that listens on
+# UDP local_port and forwards the traffic over TCP through the SSH tunnel to
+# the VPS at remote_port. A corresponding socat on the VPS side must convert
+# TCP back to UDP at the final destination.
+# ---------------------------------------------------------------------------
+ssh_tunnel_udp_bridges: []
+
+# ---------------------------------------------------------------------------
+# Tunnel system user — a dedicated unprivileged account that owns the tunnel.
+# Created automatically by the role.
+# ---------------------------------------------------------------------------
+ssh_tunnel_user: "tunnel"
+
+# ---------------------------------------------------------------------------
+# SSH private key path on the target host.
+# The role copies a key from the Ansible control node (ssh_tunnel_private_key_src)
+# or generates a fresh Ed25519 key when ssh_tunnel_generate_key is true.
+# ---------------------------------------------------------------------------
+ssh_tunnel_key_file: "/home/{{ ssh_tunnel_user }}/.ssh/id_ed25519"
+
+# ---------------------------------------------------------------------------
+# Source path for the SSH private key on the Ansible control node.
+# Only used when ssh_tunnel_generate_key is false (the default).
+# Example: "{{ playbook_dir }}/files/tunnel_ed25519"
+# ---------------------------------------------------------------------------
+ssh_tunnel_private_key_src: ""
+
+# ---------------------------------------------------------------------------
+# Generate a new Ed25519 SSH key pair on the target host instead of copying
+# from the control node. Set to true for standalone or first-boot scenarios.
+# ---------------------------------------------------------------------------
+ssh_tunnel_generate_key: false
+
+# ---------------------------------------------------------------------------
+# SSH transport settings
+# ---------------------------------------------------------------------------
+ssh_tunnel_ssh_port: 22
+ssh_tunnel_server_alive_interval: 30
+ssh_tunnel_server_alive_count_max: 3
+
+# ---------------------------------------------------------------------------
+# Systemd service name — used for the unit file path and service commands.
+# ---------------------------------------------------------------------------
+ssh_tunnel_service_name: "ssh-tunnel"

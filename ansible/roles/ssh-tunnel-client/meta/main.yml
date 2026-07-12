@@ -1,17 +1,17 @@
 ---
-dependencies: []
 galaxy_info:
   author: tensorov
-  description: Reverse SSH tunnel client role for NAT-side hosts
+  description: Reverse SSH tunnel client role — NAT-side host
   license: MIT
-  min_ansible_version: "2.18"
+  min_ansible_version: "2.14"
   platforms:
     - name: Ubuntu
       versions:
-        - "22.04"
-        - "24.04"
+        - jammy
+        - noble
   galaxy_tags:
     - ssh
     - tunnel
     - reverse
     - gateway
+dependencies: []
