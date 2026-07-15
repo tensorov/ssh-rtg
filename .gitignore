@@ -22,3 +22,7 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Go binaries
+rtg-orchestrator
+bin/

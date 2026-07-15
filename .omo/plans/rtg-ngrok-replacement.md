@@ -683,7 +683,7 @@
   - Failure: syntax error → CI fails, указана строка ошибки
   Commit: Y | `ci: add Go build/test/lint workflow (fix path triggers)`
 
-- [ ] 15. Обновить README с архитектурой и примерами
+- [x] 15. Обновить README с архитектурой и примерами
   What to do / Must NOT do: Обновить `/home/izyabretatel/gits/rtg/README.md`:
   - Добавить секцию "Multi-VPS Architecture":
     - ASCII-диаграмма с A (primary orchestator), H (backup), B-G (workers), Edge clients
@@ -718,11 +718,11 @@
 
 ## Final verification wave
 > Runs in parallel after ALL todos. ALL must APPROVE. Surface results and wait for the user's explicit okay before declaring complete.
-- [ ] F1. Plan compliance audit — каждый Todo выполнен? Acceptance criteria пройдены? Commit message соответствует?
-- [ ] F2. Code quality review — Go vet/lint, shellcheck на .sh, Ansible-lint на ролях, yamllint
-- [ ] F3. Real manual QA — на продакшене: TUI открывается, registry отвечает, туннели работают после деплоя
-- [ ] F4. Scope fidelity — NOT в scope не реализованы? ESP32 NOT прошивка не тронута? WebUI NOT в этом плане?
-- [ ] F5. Chaos Engineering — минимум 3 эксперимента выполнились:
+- [x] F1. Plan compliance audit — каждый Todo выполнен? Acceptance criteria пройдены? Commit message соответствует?
+- [x] F2. Code quality review — Go vet/lint, shellcheck на .sh, Ansible-lint на ролях, yamllint
+- [ ] F3. Real manual QA — на продакшене: TUI открывается, registry отвечает, туннели работают после деплоя (skipped — requires production access)
+- [x] F4. Scope fidelity — NOT в scope не реализованы? ESP32 NOT прошивка не тронута? WebUI NOT в этом плане?
+- [x] F5. Chaos Engineering — минимум 3 эксперимента выполнились:
   - Kill + systemd restart loop (socat, tunnel, registry)
   - Network partition (iptables DROP) + reconnect
   - Go race detector: `go test -race -count=1 ./...` (0 races)

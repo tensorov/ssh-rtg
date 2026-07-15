@@ -14,6 +14,14 @@ Reverse SSH tunnel gateway for exposing NAT'd homelab services through a public 
   - [Standalone (no Ansible)](#option-a-standalone-no-ansible)
   - [Ansible (recommended)](#option-b-ansible-recommended)
 - [Repository Structure](#repository-structure)
+- [CLI Tools](#cli-tools)
+  - [rtg-orchestrator](#rtg-orchestrator)
+  - [Service Registry](#service-registry)
+  - [rtg-tui](#rtg-tui)
+- [Service Mesh High Availability](#service-mesh-high-availability)
+  - [rsync Config Sync](#rsync-config-sync)
+  - [Keepalived Failover](#keepalived-failover)
+  - [ESP32 Gateway](#esp32-gateway)
 - [Ansible Roles](#ansible-roles)
   - [ssh-tunnel-client](#ssh-tunnel-client-nat-side)
   - [ssh-tunnel-server](#ssh-tunnel-server-vps-side)
@@ -58,7 +66,10 @@ Reverse SSH tunnel gateway for exposing NAT'd homelab services through a public 
                                          SSH / HTTP / TCP
 ```
 
-**How it works:** The client on the NAT-side host opens an outbound SSH connection to the VPS. Through that single encrypted connection, SSH reverse-forward flags (`-R`) map remote ports on the VPS back to local ports behind NAT. Traefik on the VPS acts as a TCP router, accepting inbound traffic on the forwarded ports and proxying it through the tunnel to the homelab. The entire flow uses one outbound connection, so no inbound ports are opened on the NAT side.
+**How it works:** The client on the NAT-side host opens an outbound SSH connection to the VPS.
+Through that single encrypted connection, SSH reverse-forward flags (`-R`) map remote ports on the VPS back to local ports behind NAT.
+Traefik on the VPS acts as a TCP router, accepting inbound traffic on the forwarded ports and proxying it through the tunnel to the homelab.
+The entire flow uses one outbound connection — no inbound ports are opened on the NAT side.
 
 ## Features
 
@@ -193,26 +204,84 @@ The project includes Go-based CLI tools for service mesh operations beyond the A
 
 ### rtg-orchestrator
 
-`rtg-orchestrator` watches Consul for registered tunnel services and generates the corresponding Traefik TCP route configuration on the primary VPS. It runs as a systemd service alongside Traefik.
+`rtg-orchestrator` is an HTTP API server that manages the service registry and generates Traefik dynamic configuration. It runs as a systemd service alongside Traefik.
 
 ```bash
 # Build (from repo root)
 go build -o bin/rtg-orchestrator ./cmd/rtg-orchestrator
 
-# Run (reads Consul from CONSUL_HTTP_ADDR env)
-CONSUL_HTTP_ADDR=127.0.0.1:8500 ./bin/rtg-orchestrator
+# Run with defaults (port 8443, config to /etc/traefik/dynamic/tunnels/)
+./bin/rtg-orchestrator
 
-# Generates YAML to /etc/traefik/dynamic/tunnels/tcp-tunnels.yml
-# Triggers on: register, deregister, cleanup (not heartbeat)
+# Run with custom paths
+./bin/rtg-orchestrator \
+  -port 9090 \
+  -config-dir /etc/traefik/dynamic/tunnels/ \
+  -data-dir /var/lib/rtg-orchestrator/
 ```
 
 **How it works:**
 
-1. Connects to the local Consul agent via the Catalog API.
-2. Lists all services matching the configured tag (default: `traefik-tunnel`).
-3. Builds a Traefik TCP router + service block per service.
-4. Writes the config atomically (`.tmp` + `rename`) to avoid partial reads.
-5. Only re-writes when the service list changes (skips writes on identity to avoid unnecessary Traefik reloads).
+1. Starts an HTTP API server (default `:8443`) with structured logging.
+2. Maintains a disk-based service registry at `-data-dir` (JSON files per service).
+3. On register or delete, regenerates `rtg-services.yml` atomically (`.tmp` + `rename`).
+4. Background cleanup loop runs every 30s, removing services whose `last_seen` exceeds `TTL * 3`.
+5. Only re-writes config when the service list changes — avoids unnecessary Traefik reloads.
+6. Graceful shutdown on SIGTERM/SIGINT with a 10s drain timeout.
+
+#### HTTP API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/v1/health` | Returns uptime, service count, and status. |
+| `POST` | `/v1/services/register` | Register a new tunnel service (triggers config regen). |
+| `POST` | `/v1/services/heartbeat` | Update `last_seen` for all services of a host. |
+| `GET` | `/v1/services?status=alive` | List services. Filter by `status=alive` for non-expired only. |
+| `DELETE` | `/v1/services/{id}` | Remove a service by its opaque ID (triggers config regen). |
+
+**Register request:**
+
+```json
+{
+  "host": "192.168.1.10",
+  "port": 8080,
+  "domain": "app.example.com",
+  "proto": "http",
+  "ttl": 30
+}
+```
+
+Fields: `host` (required), `port` (required, 1-65535), `proto` (required, `http` or `tcp`), `domain` (required for `http` proto), `ttl` (seconds, default 30).
+
+**Health response:**
+
+```json
+{
+  "status": "ok",
+  "uptime": "2h15m30s",
+  "services_count": 4
+}
+```
+
+### Service Registry
+
+The registry is a disk-based store at `-data-dir/services/`. Each service is a JSON file named `{host}-{port}.json`. No database or external dependency (e.g., Consul) is required.
+
+**Service lifecycle:**
+
+1. **Register** — tunnel client calls `POST /v1/services/register`. Registry writes the JSON file and triggers Traefik config regeneration.
+2. **Heartbeat** — client calls `POST /v1/services/heartbeat` every `TTL` seconds. Updates `last_seen` for all services belonging to that host. Does not trigger config regeneration.
+3. **Expire** — background cleanup removes services where `last_seen` is older than `TTL * 3`.
+4. **Delete** — explicit `DELETE /v1/services/{id}` removes the service file and regenerates config.
+
+**Alive status** is computed as: `last_seen + TTL * 2 > now`. Only alive services are included in the generated Traefik config.
+
+**Config generation** (`internal/configgen`):
+
+- `proto=http` services generate Traefik HTTP routers with `Host()` rule and TLS via certResolver.
+- `proto=tcp` services generate Traefik TCP routers with `HostSNI(*)` rule on entryPoint `tunnel-{port}`.
+- Output file: `rtg-services.yml` in the Traefik dynamic config directory.
+- Atomic write: content is written to `.tmp`, then renamed over the target file.
 
 ### rtg-tui
 
@@ -278,6 +347,46 @@ rc-service keepalived start
 ```
 
 The VIP stays with the primary VPS under normal operation. If the primary fails health checks, the backup takes over the VIP within seconds (VRRP advertisement interval).
+
+### ESP32 Gateway
+
+For exposing ESP32 devices (sensors, relays, controllers) behind NAT, `deploy/gateway/` provides systemd template units that use `socat(1)` to bridge TCP connections from the local network to the ESP32.
+
+```
+External client            Linux gateway                   ESP32
+  (SSH tunnel,     ──>    socat TCP-LISTEN    ──>         HTTP/TCP server
+   local network)          :3000, fork,                    :80 (DHT22 sensor,
+                           reuseaddr                       relay, etc.)
+```
+
+Each ESP32 service gets its own systemd instance. The `%i` parameter in the template unit is the local listen port:
+
+```bash
+# Install socat (required, not auto-installed)
+sudo apt install socat
+
+# Configure the ESP32 target
+sudo mkdir -p /etc/systemd/system/esp32-gateway@.service.d
+cat <<'EOF' | sudo tee /etc/systemd/system/esp32-gateway@.service.d/override.conf
+[Service]
+Environment=ESP32_HOST=192.168.1.42 ESP32_PORT=80
+EOF
+
+# Start a gateway instance (listens on :3000, forwards to ESP32:80)
+sudo systemctl daemon-reload
+sudo systemctl enable --now esp32-gateway@3000.service
+
+# Start multiple instances for different ESP32 services
+sudo systemctl enable --now esp32-gateway@3001.service
+```
+
+The `esp32-gateway.target` groups all instances for batch management:
+
+```bash
+sudo systemctl enable --now esp32-gateway.target
+```
+
+The unit runs as `User=nobody` with `CAP_NET_BIND_SERVICE` for ports below 1024. Full documentation is in `deploy/gateway/README.md`.
 
 ## Ansible Roles
 
