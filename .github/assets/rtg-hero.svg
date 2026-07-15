@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 350" width="800" height="350">
+  <defs>
+    <!-- Gradient for SSH tunnel pipe -->
+    <linearGradient id="tunnelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e40af" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#3b82f6" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#1e40af" stop-opacity="0.3"/>
+    </linearGradient>
+    <!-- Glow filter for blue accents -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Subtle shadow for cards -->
+    <filter id="cardShadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+    <!-- Arrow marker -->
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,3 L0,6 L1.5,3 Z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,3 L0,6 L1.5,3 Z" fill="#475569"/>
+    </marker>
+    <marker id="arrowBlueRight" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,4 L0,8 L2,4 Z" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="350" fill="#0f172a" rx="8"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.04" stroke="#94a3b8" stroke-width="0.5">
+    <line x1="0" y1="50" x2="800" y2="50"/><line x1="0" y1="100" x2="800" y2="100"/>
+    <line x1="0" y1="150" x2="800" y2="150"/><line x1="0" y1="200" x2="800" y2="200"/>
+    <line x1="0" y1="250" x2="800" y2="250"/><line x1="0" y1="300" x2="800" y2="300"/>
+    <line x1="100" y1="0" x2="100" y2="350"/><line x1="200" y1="0" x2="200" y2="350"/>
+    <line x1="300" y1="0" x2="300" y2="350"/><line x1="400" y1="0" x2="400" y2="350"/>
+    <line x1="500" y1="0" x2="500" y2="350"/><line x1="600" y1="0" x2="600" y2="350"/>
+    <line x1="700" y1="0" x2="700" y2="350"/>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- LEFT COLUMN: Homelab (NAT)                   -->
+  <!-- ============================================ -->
+  <g>
+    <!-- Card background -->
+    <rect x="24" y="32" width="212" height="286" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1" filter="url(#cardShadow)"/>
+
+    <!-- Header badge -->
+    <rect x="44" y="52" width="172" height="32" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1" opacity="0.8"/>
+    <text x="130" y="73" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" letter-spacing="0.5">HOMELAB (NAT)</text>
+
+    <!-- Server icon -->
+    <g transform="translate(94, 100)">
+      <!-- Server rack top unit -->
+      <rect x="0" y="0" width="72" height="28" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1.5"/>
+      <circle cx="14" cy="14" r="3" fill="#22c55e" opacity="0.9"/>
+      <line x1="26" y1="8" x2="62" y2="8" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="26" y1="14" x2="50" y2="14" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="26" y1="20" x2="56" y2="20" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Server rack middle unit -->
+      <rect x="0" y="34" width="72" height="28" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1.5"/>
+      <circle cx="14" cy="48" r="3" fill="#3b82f6" opacity="0.9"/>
+      <line x1="26" y1="42" x2="58" y2="42" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="26" y1="48" x2="46" y2="48" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="26" y1="54" x2="52" y2="54" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Server rack bottom unit -->
+      <rect x="0" y="68" width="72" height="28" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1.5"/>
+      <circle cx="14" cy="82" r="3" fill="#22c55e" opacity="0.9"/>
+      <line x1="26" y1="76" x2="54" y2="76" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="26" y1="82" x2="48" y2="82" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="26" y1="88" x2="60" y2="88" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- Service labels -->
+    <g transform="translate(44, 226)">
+      <!-- SSH badge -->
+      <rect x="0" y="0" width="62" height="24" rx="4" fill="#172554" stroke="#1d4ed8" stroke-width="1"/>
+      <text x="31" y="16" text-anchor="middle" font-family="monospace" font-size="11" font-weight="600" fill="#60a5fa">SSH</text>
+      <!-- HTTP badge -->
+      <rect x="72" y="0" width="72" height="24" rx="4" fill="#172554" stroke="#1d4ed8" stroke-width="1"/>
+      <text x="108" y="16" text-anchor="middle" font-family="monospace" font-size="11" font-weight="600" fill="#60a5fa">HTTP</text>
+      <!-- TCP badge -->
+      <rect x="0" y="32" width="72" height="24" rx="4" fill="#172554" stroke="#1d4ed8" stroke-width="1"/>
+      <text x="36" y="48" text-anchor="middle" font-family="monospace" font-size="11" font-weight="600" fill="#60a5fa">TCP</text>
+      <!-- services text -->
+      <text x="80" y="48" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#64748b">services</text>
+    </g>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- MIDDLE COLUMN: SSH Tunnel                    -->
+  <!-- ============================================ -->
+  <g>
+    <!-- Card background -->
+    <rect x="280" y="32" width="240" height="286" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1" filter="url(#cardShadow)"/>
+
+    <!-- Header badge -->
+    <rect x="300" y="52" width="200" height="32" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1" opacity="0.8"/>
+    <text x="400" y="73" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" letter-spacing="0.5">SSH TUNNEL</text>
+
+    <!-- Encrypted pipe -->
+    <g transform="translate(300, 108)">
+      <!-- Pipe body -->
+      <rect x="10" y="30" width="220" height="40" rx="20" fill="url(#tunnelGrad)" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="6,3"/>
+
+      <!-- Lock icon centered in pipe -->
+      <g transform="translate(96, 32)">
+        <!-- Lock body -->
+        <rect x="0" y="14" width="28" height="22" rx="4" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+        <!-- Lock shackle -->
+        <path d="M6,14 V8 a8,8 0 0,1 16,0 V14" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+        <!-- Keyhole -->
+        <circle cx="14" cy="23" r="3" fill="#3b82f6" opacity="0.7"/>
+        <line x1="14" y1="25" x2="14" y2="32" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+      </g>
+
+      <!-- Tunnel direction arrows (inside pipe) -->
+      <path d="M22,50 L48,50" stroke="#3b82f6" stroke-width="1" opacity="0.4" marker-end="url(#arrowBlue)"/>
+      <path d="M192,50 L166,50" stroke="#3b82f6" stroke-width="1" opacity="0.4" marker-end="url(#arrowBlue)"/>
+    </g>
+
+    <!-- SSH reverse-forward label -->
+    <g transform="translate(300, 170)">
+      <rect x="30" y="0" width="180" height="28" rx="6" fill="#0c1a3d" stroke="#1d4ed8" stroke-width="1" opacity="0.7"/>
+      <text x="120" y="19" text-anchor="middle" font-family="monospace" font-size="11" fill="#60a5fa" opacity="0.9">ssh -R 0.0.0.0:PORT:localhost:PORT</text>
+    </g>
+
+    <!-- Connection labels -->
+    <g transform="translate(300, 210)">
+      <!-- Outbound connection indicator -->
+      <rect x="44" y="0" width="152" height="22" rx="4" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+      <text x="120" y="15" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#64748b">Single outbound connection</text>
+    </g>
+
+    <!-- Encryption badge -->
+    <g transform="translate(300, 248)">
+      <rect x="56" y="0" width="128" height="22" rx="4" fill="#052e16" stroke="#16a34a" stroke-width="1"/>
+      <text x="120" y="15" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#4ade80">AES-256-GCM Encrypted</text>
+    </g>
+
+    <!-- NAT traversal note -->
+    <g transform="translate(300, 282)">
+      <text x="120" y="12" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#475569" font-style="italic">No inbound ports required</text>
+    </g>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- RIGHT COLUMN: VPS (Public) + Internet Users  -->
+  <!-- ============================================ -->
+  <g>
+    <!-- Card background -->
+    <rect x="556" y="32" width="220" height="286" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1" filter="url(#cardShadow)"/>
+
+    <!-- Header badge -->
+    <rect x="576" y="52" width="180" height="32" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1" opacity="0.8"/>
+    <text x="666" y="73" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" letter-spacing="0.5">VPS (PUBLIC)</text>
+
+    <!-- Cloud icon -->
+    <g transform="translate(608, 100)">
+      <path d="M30,56 a18,18 0 0,1 -2,-36 20,20 0 0,1 38,-4 14,14 0 0,1 14,14 14,14 0 0,1 -2,28 Z"
+            fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+      <!-- Traefik label inside cloud -->
+      <text x="42" y="48" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#3b82f6">Traefik</text>
+    </g>
+
+    <!-- Traefik routing label -->
+    <g transform="translate(576, 176)">
+      <rect x="10" y="0" width="180" height="22" rx="4" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+      <text x="100" y="15" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">TLS termination + routing</text>
+    </g>
+
+    <!-- Public ports badge -->
+    <g transform="translate(576, 206)">
+      <rect x="22" y="0" width="156" height="22" rx="4" fill="#0c1a3d" stroke="#1d4ed8" stroke-width="1"/>
+      <text x="100" y="15" text-anchor="middle" font-family="monospace" font-size="11" fill="#60a5fa">:80  :443  :22</text>
+    </g>
+
+    <!-- Internet Users section -->
+    <g transform="translate(576, 240)">
+      <!-- Separator line -->
+      <line x1="10" y1="0" x2="190" y2="0" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+
+      <!-- Internet users icon -->
+      <g transform="translate(72, 14)">
+        <!-- Person 1 -->
+        <circle cx="18" cy="8" r="6" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+        <path d="M6,26 a12,12 0 0,1 24,0" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+        <!-- Person 2 -->
+        <circle cx="42" cy="8" r="6" fill="none" stroke="#64748b" stroke-width="1.5"/>
+        <path d="M30,26 a12,12 0 0,1 24,0" fill="none" stroke="#64748b" stroke-width="1.5"/>
+      </g>
+      <text x="100" y="50" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="500" fill="#cbd5e1">Internet Users</text>
+    </g>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- CONNECTING ARROWS                            -->
+  <!-- ============================================ -->
+
+  <!-- Arrow: Homelab → SSH Tunnel -->
+  <line x1="236" y1="175" x2="280" y2="175" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowBlue)" filter="url(#glow)"/>
+
+  <!-- Arrow: SSH Tunnel → VPS -->
+  <line x1="520" y1="175" x2="556" y2="175" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowBlue)" filter="url(#glow)"/>
+
+  <!-- Flow direction label -->
+  <text x="400" y="340" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#475569">
+    <tspan>Internet</tspan>
+    <tspan fill="#3b82f6"> &#x2190; </tspan>
+    <tspan>VPS</tspan>
+    <tspan fill="#3b82f6"> &#x2190; </tspan>
+    <tspan>Tunnel</tspan>
+    <tspan fill="#3b82f6"> &#x2190; </tspan>
+    <tspan>Homelab Services</tspan>
+  </text>
+</svg>

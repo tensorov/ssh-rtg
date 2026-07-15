@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="tunnel-grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="lock-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tunnel pipe - outer -->
+  <rect x="20" y="80" width="160" height="44" rx="22" fill="url(#tunnel-grad)"/>
+
+  <!-- Tunnel pipe - inner bore -->
+  <rect x="20" y="90" width="160" height="24" rx="12" fill="#1e293b"/>
+
+  <!-- Left opening (darker ellipse) -->
+  <ellipse cx="20" cy="102" rx="8" ry="16" fill="#0f172a"/>
+
+  <!-- Right opening (darker ellipse) -->
+  <ellipse cx="180" cy="102" rx="8" ry="16" fill="#0f172a"/>
+
+  <!-- Left arrow entering tunnel -->
+  <path d="M8 102 L24 102" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+  <path d="M12 96 L6 102 L12 108" stroke="#2563eb" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Right arrow exiting tunnel -->
+  <path d="M176 102 L192 102" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+  <path d="M188 96 L194 102 L188 108" stroke="#2563eb" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Lock body -->
+  <rect x="84" y="48" width="32" height="26" rx="4" fill="url(#lock-grad)"/>
+
+  <!-- Lock shackle -->
+  <path d="M90 48 V40 A10 10 0 0 1 110 40 V48" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Keyhole -->
+  <circle cx="100" cy="66" r="3" fill="#1e293b"/>
+  <rect x="99" y="66" width="2" height="6" rx="1" fill="#1e293b"/>
+
+  <!-- RTG label -->
+  <text x="100" y="160" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="#1e293b" letter-spacing="4">RTG</text>
+</svg>

@@ -1,92 +1,54 @@
+<!-- <CENTERED SECTION FOR GITHUB DISPLAY> -->
+<div align="center">
+
 # reverse-ssh-gateway
 
-[![CI](https://github.com/tensorov/reverse-ssh-gateway/actions/workflows/lint.yml/badge.svg)](https://github.com/tensorov/reverse-ssh-gateway/actions/workflows/lint.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Ansible](https://img.shields.io/badge/Ansible-core%3E%3D2.14-blue?logo=ansible)](https://www.ansible.com/)
+<p align="center">
+  <img src=".github/assets/rtg-logo.svg" alt="RTG Logo" width="160">
+</p>
 
-Reverse SSH tunnel gateway for exposing NAT'd homelab services through a public VPS. Expose SSH, HTTP, and arbitrary TCP services behind NAT without port forwarding, dynamic DNS, or VPN overlays.
+Reverse SSH tunnel gateway. Expose NAT'd services through a public VPS.
+No port forwarding. No dynamic DNS. No VPN overlays. One outbound SSH connection.
 
-## Table of Contents
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen?labelColor=black&style=flat-square)](https://github.com/tensorov/reverse-ssh-gateway/actions/workflows/lint.yml)
+[![License](https://img.shields.io/badge/License-MIT-blue?labelColor=black&style=flat-square)](LICENSE)
+[![Ansible](https://img.shields.io/badge/Ansible-core%3E%3D2.14-blue?logo=ansible&labelColor=black&style=flat-square)](https://www.ansible.com/)
+[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go&labelColor=black&style=flat-square)](https://go.dev/)
+[![Stars](https://img.shields.io/github/stars/tensorov/reverse-ssh-gateway?labelColor=black&style=flat-square)](https://github.com/tensorov/reverse-ssh-gateway/stargazers)
+[![Forks](https://img.shields.io/github/forks/tensorov/reverse-ssh-gateway?labelColor=black&style=flat-square)](https://github.com/tensorov/reverse-ssh-gateway/network/members)
 
-- [Architecture](#architecture)
-- [Features](#features)
-- [Quick Start](#quick-start)
-  - [Standalone (no Ansible)](#option-a-standalone-no-ansible)
-  - [Ansible (recommended)](#option-b-ansible-recommended)
-- [Repository Structure](#repository-structure)
-- [CLI Tools](#cli-tools)
-  - [rtg-orchestrator](#rtg-orchestrator)
-  - [Service Registry](#service-registry)
-  - [rtg-tui](#rtg-tui)
-- [Service Mesh High Availability](#service-mesh-high-availability)
-  - [rsync Config Sync](#rsync-config-sync)
-  - [Keepalived Failover](#keepalived-failover)
-  - [ESP32 Gateway](#esp32-gateway)
-- [Ansible Roles](#ansible-roles)
-  - [ssh-tunnel-client](#ssh-tunnel-client-nat-side)
-  - [ssh-tunnel-server](#ssh-tunnel-server-vps-side)
-  - [Playbooks](#playbooks)
-  - [Sample Inventory](#sample-inventory)
-- [Port Configuration](#port-configuration)
-  - [TCP Port Mappings](#tcp-port-mappings)
-  - [UDP-to-TCP Bridges](#udp-to-tcp-bridges)
-- [Variables Reference](#variables-reference)
-  - [Client Variables](#client-role-variables)
-  - [Server Variables](#server-role-variables)
-- [VPS Prerequisites](#vps-prerequisites)
-- [Homelab Integration](#homelab-integration-git-submodule)
-- [Tunnel Script Behavior](#tunnel-script-behavior)
-- [Troubleshooting](#troubleshooting)
-- [Development](#development)
-- [License](#license)
+</div>
+<!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-## Architecture
+---
 
-```
-    NAT SIDE (home network)                   PUBLIC VPS
-    =======================                  =====================
+> [!NOTE]
+> **The core idea:** Your homelab host opens *one* outbound SSH connection to a public VPS. SSH reverse-forward flags (`-R`) map remote ports on the VPS back to local services behind NAT. Traefik on the VPS accepts inbound traffic on those ports and proxies it through the tunnel. No inbound ports. No VPN. One connection.
 
-    +------------------+                      +------------------+
-    |  Homelab Host    |                      |  VPS             |
-    |                  |    SSH tunnel        |                  |
-    |  ssh-tunnel      |-- (outbound) ------->|  sshd            |
-    |  (systemd svc)   |    -R <port>         |  +---------------+
-    |                  |                      |  | Traefik       |
-    +--------+---------+                      |  | (TCP router)  |
-             |                                |  +-------+-------+
-             |                                |          |
-       local services                   entryPoints    public
-       (SSH, HTTP, ...)                (tunnel-PORT)  internet
-                                              |          |
-                                              v          v
-                                         127.0.0.1    Clients
-                                         :<port>      reach
-                                             |        services
-                                             |        via VPS IP
-                                         SSH / HTTP / TCP
-```
+> [!TIP]
+> **Ready to deploy?** Jump to [Quick Start](#quick-start) to get running in under five minutes.
 
-**How it works:** The client on the NAT-side host opens an outbound SSH connection to the VPS.
-Through that single encrypted connection, SSH reverse-forward flags (`-R`) map remote ports on the VPS back to local ports behind NAT.
-Traefik on the VPS acts as a TCP router, accepting inbound traffic on the forwarded ports and proxying it through the tunnel to the homelab.
-The entire flow uses one outbound connection — no inbound ports are opened on the NAT side.
+---
 
 ## Features
 
-- **No inbound ports required.** The client initiates all connections outbound. NAT stays closed.
-- **Single encrypted tunnel.** All traffic flows through one SSH connection. No additional VPN or overlay network.
-- **Auto-reconnect with backoff.** Exponential backoff (1s to 60s cap), reset on clean exit. Dead connections detected via SSH keepalive.
-- **UDP-to-TCP bridging.** Forward UDP services (WireGuard, DNS) through the TCP tunnel using `socat(1)`.
-- **Traefik TCP routing.** Server role generates Traefik dynamic config automatically for each tunneled port.
-- **Automated Traefik config generation.** `rtg-orchestrator` watches Consul for registered tunnels and writes Traefik TCP route config with atomic file updates.
-- **Service mesh config sync.** Pull-based rsync synchronizes the Traefik dynamic config from the primary VPS to backup VPSes every 60 seconds.
-- **Keepalived failover.** VRRP-based VIP failover across the VPS fleet for high availability of tunnel endpoints.
-- **Two deployment paths.** Standalone shell script for single hosts, Ansible roles for multi-host fleets.
-- **Systemd managed.** Both sides run as systemd services with structured syslog logging.
-- **Firewall automation.** Server role opens UFW or nftables rules for each tunneled port.
-- **Git submodule ready.** Designed to embed in an existing Ansible homelab repository.
+| | Feature | Description |
+|---|---|---|
+| 🔒 | **No inbound ports** | Client initiates all connections outbound. NAT stays closed. |
+| 🔄 | **Auto-reconnect with backoff** | Exponential backoff (1s to 60s cap), reset on clean exit. Dead connections detected via SSH keepalive. |
+| ⚡ | **Single encrypted tunnel** | All traffic flows through one SSH connection. No additional VPN or overlay network. |
+| 🛠️ | **Traefik TCP routing** | Server role generates Traefik dynamic config automatically for each tunneled port. |
+| 📦 | **UDP-to-TCP bridging** | Forward UDP services (WireGuard, DNS) through the TCP tunnel using `socat(1)`. |
+| 🔗 | **Service mesh config sync** | Pull-based rsync synchronizes Traefik dynamic config from primary VPS to backup VPSes every 60 seconds. |
+| 🖥️ | **Keepalived failover** | VRRP-based VIP failover across the VPS fleet for high availability of tunnel endpoints. |
+| 🧩 | **Two deployment paths** | Standalone shell script for single hosts, Ansible roles for multi-host fleets. Systemd managed. Firewall automation. Git submodule ready. |
+
+---
 
 ## Quick Start
+
+> [!NOTE]
+> **Need HA?** For multi-VPS setups with failover, see [Service Mesh High Availability](#service-mesh-high-availability).
 
 ### Option A: Standalone (no Ansible)
 
@@ -149,6 +111,45 @@ ansible-playbook -i ansible/inventories/production/hosts.yml \
   ansible/playbooks/deploy-client.yml
 ```
 
+---
+
+## Architecture
+
+<p align="center">
+  <img src=".github/assets/rtg-hero.svg" alt="Reverse SSH Gateway Architecture">
+</p>
+
+```
+    NAT SIDE (home network)                   PUBLIC VPS
+    =======================                  =====================
+
+    +------------------+                      +------------------+
+    |  Homelab Host    |                      |  VPS             |
+    |                  |    SSH tunnel        |                  |
+    |  ssh-tunnel      |-- (outbound) ------->|  sshd            |
+    |  (systemd svc)   |    -R <port>         |  +---------------+
+    |                  |                      |  | Traefik       |
+    +--------+---------+                      |  | (TCP router)  |
+             |                                |  +-------+-------+
+             |                                |          |
+       local services                   entryPoints    public
+       (SSH, HTTP, ...)                (tunnel-PORT)  internet
+                                              |          |
+                                              v          v
+                                         127.0.0.1    Clients
+                                         :<port>      reach
+                                             |        services
+                                             |        via VPS IP
+                                         SSH / HTTP / TCP
+```
+
+**How it works:** The client on the NAT-side host opens an outbound SSH connection to the VPS.
+Through that single encrypted connection, SSH reverse-forward flags (`-R`) map remote ports on the VPS back to local ports behind NAT.
+Traefik on the VPS acts as a TCP router, accepting inbound traffic on the forwarded ports and proxying it through the tunnel to the homelab.
+The entire flow uses one outbound connection. No inbound ports are opened on the NAT side.
+
+---
+
 ## Repository Structure
 
 ```
@@ -198,6 +199,8 @@ reverse-ssh-gateway/
 └── .yamllint
 ```
 
+---
+
 ## CLI Tools
 
 The project includes Go-based CLI tools for service mesh operations beyond the Ansible roles.
@@ -226,7 +229,7 @@ go build -o bin/rtg-orchestrator ./cmd/rtg-orchestrator
 2. Maintains a disk-based service registry at `-data-dir` (JSON files per service).
 3. On register or delete, regenerates `rtg-services.yml` atomically (`.tmp` + `rename`).
 4. Background cleanup loop runs every 30s, removing services whose `last_seen` exceeds `TTL * 3`.
-5. Only re-writes config when the service list changes — avoids unnecessary Traefik reloads.
+5. Only re-writes config when the service list changes -- avoids unnecessary Traefik reloads.
 6. Graceful shutdown on SIGTERM/SIGINT with a 10s drain timeout.
 
 #### HTTP API
@@ -269,10 +272,10 @@ The registry is a disk-based store at `-data-dir/services/`. Each service is a J
 
 **Service lifecycle:**
 
-1. **Register** — tunnel client calls `POST /v1/services/register`. Registry writes the JSON file and triggers Traefik config regeneration.
-2. **Heartbeat** — client calls `POST /v1/services/heartbeat` every `TTL` seconds. Updates `last_seen` for all services belonging to that host. Does not trigger config regeneration.
-3. **Expire** — background cleanup removes services where `last_seen` is older than `TTL * 3`.
-4. **Delete** — explicit `DELETE /v1/services/{id}` removes the service file and regenerates config.
+1. **Register** -- tunnel client calls `POST /v1/services/register`. Registry writes the JSON file and triggers Traefik config regeneration.
+2. **Heartbeat** -- client calls `POST /v1/services/heartbeat` every `TTL` seconds. Updates `last_seen` for all services belonging to that host. Does not trigger config regeneration.
+3. **Expire** -- background cleanup removes services where `last_seen` is older than `TTL * 3`.
+4. **Delete** -- explicit `DELETE /v1/services/{id}` removes the service file and regenerates config.
 
 **Alive status** is computed as: `last_seen + TTL * 2 > now`. Only alive services are included in the generated Traefik config.
 
@@ -284,6 +287,8 @@ The registry is a disk-based store at `-data-dir/services/`. Each service is a J
 - Atomic write: content is written to `.tmp`, then renamed over the target file.
 
 ### rtg-tui
+
+<img src=".github/assets/rtg-tui.png" alt="rtg-tui terminal interface" width="540">
 
 The standalone installer (`client-script/install.sh`) can optionally install a gum-based TUI for interactive tunnel management:
 
@@ -299,6 +304,8 @@ rtg-tui
 ```
 
 The TUI provides a menu-driven interface for starting, stopping, restarting, and monitoring tunnels.
+
+---
 
 ## Service Mesh High Availability
 
@@ -388,6 +395,8 @@ sudo systemctl enable --now esp32-gateway.target
 
 The unit runs as `User=nobody` with `CAP_NET_BIND_SERVICE` for ports below 1024. Full documentation is in `deploy/gateway/README.md`.
 
+---
+
 ## Ansible Roles
 
 ### ssh-tunnel-client (NAT side)
@@ -444,6 +453,8 @@ clients:
 - **`gateway`** group: VPS hosts that run the `ssh-tunnel-server` role. The `deploy-server.yml` playbook targets this group.
 - **`clients`** group: NAT-side hosts that run the `ssh-tunnel-client` role. The `deploy-client.yml` playbook targets `all` (but you typically limit it to the `clients` group).
 
+---
+
 ## Port Configuration
 
 ### TCP Port Mappings
@@ -499,6 +510,8 @@ ssh_tunnel_udp_bridges:
 
 The client starts a `socat(1)` process for each entry that listens on UDP `local_port` and forwards the data over TCP through the SSH tunnel. A matching socat on the VPS side must convert TCP back to UDP at the final destination.
 
+---
+
 ## Variables Reference
 
 ### Client Role Variables
@@ -534,6 +547,8 @@ The client starts a `socat(1)` process for each entry that listens on UDP `local
 | `ssh_tunnel_firewall_type` | `"ufw"` | Firewall backend: `"ufw"` or `"nftables"` |
 | `ssh_tunnel_enable_ip_forwarding` | `true` | Enable `net.ipv4.ip_forward` |
 | `ssh_tunnel_allowed_remote_hosts` | `"0.0.0.0/0"` | Restrict tunnel listener to specific source CIDR |
+
+---
 
 ## VPS Prerequisites
 
@@ -590,6 +605,8 @@ The server role opens firewall ports automatically (UFW or nftables). If you man
 ### IP Forwarding
 
 The role enables `net.ipv4.ip_forward` by default. If you disable this, ensure your VPS can route traffic between the tunnel listener and the Traefik process (both run on localhost, so this is rarely an issue).
+
+---
 
 ## Homelab Integration (Git Submodule)
 
@@ -655,6 +672,8 @@ git add ansible/vendor/reverse-ssh-gateway
 git commit -m "Update reverse-ssh-gateway submodule"
 ```
 
+---
+
 ## Tunnel Script Behavior
 
 The generated tunnel script (`/usr/local/bin/ssh-tunnel.sh`) runs as a systemd service and provides:
@@ -665,6 +684,8 @@ The generated tunnel script (`/usr/local/bin/ssh-tunnel.sh`) runs as a systemd s
 - **UDP-to-TCP bridging** via `socat(1)` for each entry in `ssh_tunnel_udp_bridges`.
 - **Structured logging** to syslog via `logger -t tunnel`.
 - **Clean shutdown** on SIGTERM/SIGINT, killing any background socat processes.
+
+---
 
 ## Troubleshooting
 
@@ -754,6 +775,8 @@ journalctl -u traefik -f
 | Tunnel drops frequently | Keepalive not reaching VPS | Increase `ssh_tunnel_server_alive_interval` |
 | `Permission denied (publickey)` | SSH key not deployed | Copy public key to VPS `authorized_keys` |
 
+---
+
 ## Development
 
 ### Linting
@@ -786,6 +809,8 @@ ansible-playbook --syntax-check ansible/playbooks/deploy-client.yml
 ansible-playbook --check -i ansible/inventories/sample/hosts.yml \
   ansible/playbooks/deploy-server.yml
 ```
+
+---
 
 ## License
 
