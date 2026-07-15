@@ -1,45 +1,72 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
   <defs>
-    <linearGradient id="tunnel-grad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#1d4ed8"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#080e1a"/>
     </linearGradient>
-    <linearGradient id="lock-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#1d4ed8"/>
+    <linearGradient id="edgeGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#2563eb"/>
     </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#3b82f6" stop-opacity="0.6"/>
+      <stop offset="70%" stop-color="#3b82f6" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="outerGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="innerGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-
-  <!-- Tunnel pipe - outer -->
-  <rect x="20" y="80" width="160" height="44" rx="22" fill="url(#tunnel-grad)"/>
-
-  <!-- Tunnel pipe - inner bore -->
-  <rect x="20" y="90" width="160" height="24" rx="12" fill="#1e293b"/>
-
-  <!-- Left opening (darker ellipse) -->
-  <ellipse cx="20" cy="102" rx="8" ry="16" fill="#0f172a"/>
-
-  <!-- Right opening (darker ellipse) -->
-  <ellipse cx="180" cy="102" rx="8" ry="16" fill="#0f172a"/>
-
-  <!-- Left arrow entering tunnel -->
-  <path d="M8 102 L24 102" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
-  <path d="M12 96 L6 102 L12 108" stroke="#2563eb" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Right arrow exiting tunnel -->
-  <path d="M176 102 L192 102" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
-  <path d="M188 96 L194 102 L188 108" stroke="#2563eb" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Lock body -->
-  <rect x="84" y="48" width="32" height="26" rx="4" fill="url(#lock-grad)"/>
-
-  <!-- Lock shackle -->
-  <path d="M90 48 V40 A10 10 0 0 1 110 40 V48" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>
-
-  <!-- Keyhole -->
-  <circle cx="100" cy="66" r="3" fill="#1e293b"/>
-  <rect x="99" y="66" width="2" height="6" rx="1" fill="#1e293b"/>
-
-  <!-- RTG label -->
-  <text x="100" y="160" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="#1e293b" letter-spacing="4">RTG</text>
+  <rect width="200" height="200" fill="url(#bg)"/>
+  <g stroke="none">
+    <polygon points="100,26 158,55 112,50" fill="#1e293b"/>
+    <polygon points="158,55 152,82 112,50" fill="#162033"/>
+    <polygon points="158,55 158,145 152,82" fill="#0f172a"/>
+    <polygon points="158,145 142,132 152,82" fill="#0a0f17"/>
+    <polygon points="158,145 100,174 92,155" fill="#080c14"/>
+    <polygon points="158,145 142,132 92,155" fill="#060a12"/>
+    <polygon points="100,174 42,145 48,118" fill="#0a0f17"/>
+    <polygon points="100,174 92,155 48,118" fill="#0d1320"/>
+    <polygon points="42,145 42,55 62,70" fill="#131d2f"/>
+    <polygon points="42,145 48,118 62,70" fill="#162033"/>
+    <polygon points="42,55 100,26 112,50" fill="#1e293b"/>
+    <polygon points="42,55 62,70 112,50" fill="#1a2638"/>
+    <polygon points="112,50 152,82 100,76" fill="#0d1320"/>
+    <polygon points="152,82 126,92 100,76" fill="#0a0f17"/>
+    <polygon points="152,82 142,132 126,92" fill="#080c14"/>
+    <polygon points="142,132 118,118 126,92" fill="#060a12"/>
+    <polygon points="142,132 92,155 92,130" fill="#050810"/>
+    <polygon points="142,132 118,118 92,130" fill="#04070c"/>
+    <polygon points="92,155 48,118 68,112" fill="#080c14"/>
+    <polygon points="92,155 92,130 68,112" fill="#060a12"/>
+    <polygon points="48,118 62,70 74,86" fill="#0a0f17"/>
+    <polygon points="48,118 68,112 74,86" fill="#0d1320"/>
+    <polygon points="62,70 112,50 100,76" fill="#0d1320"/>
+    <polygon points="62,70 74,86 100,76" fill="#0a0f17"/>
+    <polygon points="100,76 126,92 118,118 92,130 68,112 74,86" fill="#020408"/>
+  </g>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 100 26 L 158 55 L 158 145 L 100 174 L 42 145 L 42 55 Z" stroke="url(#edgeGlow)" stroke-width="2" filter="url(#outerGlow)"/>
+    <path d="M 112 50 L 152 82 L 142 132 L 92 155 L 48 118 L 62 70 Z" stroke="#2563eb" stroke-width="1" opacity="0.6"/>
+    <path d="M 100 76 L 126 92 L 118 118 L 92 130 L 68 112 L 74 86 Z" stroke="#3b82f6" stroke-width="1.2" filter="url(#innerGlow)" opacity="0.8"/>
+    <path d="M 100 26 L 112 50 M 158 55 L 152 82 M 158 145 L 142 132 M 100 174 L 92 155 M 42 145 L 48 118 M 42 55 L 62 70" stroke="#2563eb" stroke-width="0.8" opacity="0.5"/>
+    <path d="M 112 50 L 100 76 M 152 82 L 126 92 M 142 132 L 118 118 M 92 155 L 92 130 M 48 118 L 68 112 M 62 70 L 74 86" stroke="#2563eb" stroke-width="0.6" opacity="0.4"/>
+    <path d="M 100 26 L 152 82 M 42 55 L 112 50 M 158 145 L 92 155 M 42 145 L 62 70" stroke="#3b82f6" stroke-width="0.6" opacity="0.3"/>
+  </g>
+  <g opacity="0.5">
+    <line x1="100" y1="72" x2="100" y2="128" stroke="url(#beam)" stroke-width="1.5"/>
+    <path d="M 100 124 L 103 120 M 100 124 L 97 120" stroke="#3b82f6" stroke-width="1" stroke-linecap="round"/>
+  </g>
 </svg>
