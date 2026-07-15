@@ -10,12 +10,12 @@
 Reverse SSH tunnel gateway. Expose NAT'd services through a public VPS.
 No port forwarding. No dynamic DNS. No VPN overlays. One outbound SSH connection.
 
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen?labelColor=black&style=flat-square)](https://github.com/tensorov/reverse-ssh-gateway/actions/workflows/lint.yml)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen?labelColor=black&style=flat-square)](https://github.com/tensorov/ssh-rtg/actions/workflows/lint.yml)
 [![License](https://img.shields.io/badge/License-MIT-blue?labelColor=black&style=flat-square)](LICENSE)
 [![Ansible](https://img.shields.io/badge/Ansible-core%3E%3D2.14-blue?logo=ansible&labelColor=black&style=flat-square)](https://www.ansible.com/)
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go&labelColor=black&style=flat-square)](https://go.dev/)
-[![Stars](https://img.shields.io/github/stars/tensorov/reverse-ssh-gateway?labelColor=black&style=flat-square)](https://github.com/tensorov/reverse-ssh-gateway/stargazers)
-[![Forks](https://img.shields.io/github/forks/tensorov/reverse-ssh-gateway?labelColor=black&style=flat-square)](https://github.com/tensorov/reverse-ssh-gateway/network/members)
+[![Stars](https://img.shields.io/github/stars/tensorov/ssh-rtg?labelColor=black&style=flat-square)](https://github.com/tensorov/ssh-rtg/stargazers)
+[![Forks](https://img.shields.io/github/forks/tensorov/ssh-rtg?labelColor=black&style=flat-square)](https://github.com/tensorov/ssh-rtg/network/members)
 
 </div>
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
@@ -92,7 +92,7 @@ Better for managing multiple NAT hosts, shared tunnel configurations, or integra
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/tensorov/reverse-ssh-gateway.git
+git clone https://github.com/tensorov/ssh-rtg.git
 cd reverse-ssh-gateway
 
 # 2. Set up your inventory
@@ -615,7 +615,7 @@ To use this repo as a submodule in an existing Ansible homelab:
 ```bash
 # Add as a submodule
 cd ~/gits/homelab
-git submodule add https://github.com/tensorov/reverse-ssh-gateway.git ansible/vendor/reverse-ssh-gateway
+git submodule add https://github.com/tensorov/ssh-rtg.git ansible/vendor/reverse-ssh-gateway
 
 # Initialize after clone (on other machines)
 git submodule update --init --recursive
