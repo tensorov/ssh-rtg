@@ -1,0 +1,32 @@
+Work Item: W1-T2 Registry API endpoints
+Date: 2026-07-15
+Status: COMPLETE
+
+## Summary
+Implemented 5 Registry API endpoints (register, heartbeat, list, delete, health w/ services_count) in internal/registry/ with TDD.
+
+## Files Created
+- internal/registry/registry.go — Registry implementation (Register, Heartbeat, ListServices, DeleteService, ServiceCount, Cleanup)
+- internal/registry/registry_test.go — 23 tests covering happy paths, validation, TTL expiry, cleanup, race conditions, lazy register, disk consistency
+
+## Files Modified
+- cmd/rtg-orchestrator/main.go — Added 5 routes, closures capturing servicesDir, background cleanup goroutine, health endpoint reads actual ServiceCount from disk
+- cmd/rtg-orchestrator/main_test.go — 11 HTTP integration tests covering all endpoints, validation errors, disk state persistence
+- Makefile — Updated test-orchestrator and vet-orchestrator to cover internal/registry/... too
+
+## Test Results
+- go vet ./... → PASS (0 warnings)
+- go test ./cmd/rtg-orchestrator/... → 11 tests, 0.110s
+- go test ./internal/registry/... → 23 tests, 11.522s
+- go test -race ./... → PASS
+- CGO_ENABLED=0 go build → PASS (static binary)
+- Smoke test (live binary): all 5 endpoints verified (register, list, heartbeat, delete, health count)
+
+## Key Design Decisions
+- Stateless: all state on disk ({data-dir}/services/*.json), no in-memory cache
+- Opaque IDs: {host}-{port} used for file naming but never parsed back
+- Stdlib only: net/http, encoding/json, os, time, path/filepath
+- Background cleanup every 30s: removes services with last_seen > TTL*3
+- Heartbeat does NOT trigger Traefik config regeneration (deferred to W1-T3)
+- Lazy register: heartbeat creates minimal service if host not found
+- Validation: host required, port 1-65535, proto "http"|"tcp", TTL defaults to 30

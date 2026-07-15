@@ -1,0 +1,12 @@
+
+=== TASK 14: Go CI workflow ===
+Status: passed
+Files changed: .github/workflows/lint.yml
+yamllint: yamllint not installed on host; validated via python3 yaml.safe_load() — YAML valid
+QA evidence:
+  - grep "build-go" → line 65: "  build-go:" ✅
+  - grep "cmd/" → lines 9, 21 (path filters) + line 76 (build step) ✅
+  - grep "go.mod" → lines 11, 23 (path filters) ✅
+  - grep "go test" → line 78 ✅
+  - grep "go vet" → line 74 ✅
+  - python3 yaml.safe_load() → exit 0 ✅

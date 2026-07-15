@@ -1,0 +1,56 @@
+=== TASK 01: gum dependency check ===
+Status: passed
+Files changed: client-script/install.sh
+
+Changes made:
+- Added --skip-gum-check flag to usage header (line 19)
+- Added SKIP_GUM_CHECK=0 default variable (line 35)
+- Added --skip-gum-check case in argument parser (line 61-62)
+- Added gum presence check block after SSH prerequisite check (lines 172-189):
+  - Checks command -v gum
+  - If not found: prints error + URL to charmbracelet/gum/releases + apt/brew instructions
+  - Respects --skip-gum-check flag
+  - Does NOT auto-download gum
+
+shellcheck: clean (no output = no warnings/errors)
+
+QA evidence:
+
+1) --skip-gum-check bypasses the check (exit 1 is expected — fails later at mkdir /etc/reverse-ssh-gateway which requires root):
+$ bash client-script/install.sh --skip-gum-check
+mkdir: cannot create directory '/etc/reverse-ssh-gateway': Permission denied
+EXIT_CODE=1
+
+2) Without --skip-gum-check, gum not installed shows error + install instructions:
+$ bash client-script/install.sh
+ERROR: gum is required but not found.
+  Install it from https://github.com/charmbracelet/gum/releases
+
+  Debian/Ubuntu:
+    echo 'deb [signed-by=/usr/share/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *' | sudo tee /etc/apt/sources.list.d/charm.list
+    sudo apt update && sudo apt install gum
+
+  macOS:
+    brew install gum
+
+  Or skip this check with --skip-gum-check.
+EXIT_CODE=1
+
+3) -h shows --skip-gum-check in flags list:
+$ bash client-script/install.sh -h
+Usage:
+  ./install.sh                                                # interactive (prompts for missing values)
+  ./install.sh --jump-host tunnel@vps.example.com             # minimal, uses default PORTS
+  ./install.sh --jump-host tunnel@vps.example.com --ports 2022:22,8080:8080
+  ./install.sh --config /path/to/custom.conf                  # use existing config
+  ./install.sh --help                                         # this message
+
+Flags:
+  --jump-host USER@HOST       VPS jump host (sets GATEWAY_HOST)
+  --ports  REMOTE:LOCAL,...   Comma-separated port mappings
+  --config PATH               Path to config.env to install
+  --service-name NAME         Systemd service name (default: ssh-tunnel)
+  --skip-gum-check            Skip the gum dependency check (for CI)
+  --uninstall                 Remove the service and all installed files
+  --help                      Show this message
+EXIT_CODE=0

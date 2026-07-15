@@ -16,6 +16,7 @@
 #   --ports  REMOTE:LOCAL,...   Comma-separated port mappings
 #   --config PATH               Path to config.env to install
 #   --service-name NAME         Systemd service name (default: ssh-tunnel)
+#   --skip-gum-check            Skip the gum dependency check (for CI)
 #   --uninstall                 Remove the service and all installed files
 #   --help                      Show this message
 
@@ -31,6 +32,7 @@ JUMP_HOST=""
 PORTS_STR=""
 CONFIG_SRC=""
 DO_UNINSTALL=0
+SKIP_GUM_CHECK=0
 
 # ===========================================================================
 # Parse CLI flags
@@ -55,6 +57,9 @@ while [ $# -gt 0 ]; do
             ;;
         --uninstall)
             DO_UNINSTALL=1
+            ;;
+        --skip-gum-check)
+            SKIP_GUM_CHECK=1
             ;;
         --help|-h)
             sed -n '/^# Usage:/,/^$/p' "$0" | sed 's/^# //; s/^#$//'
@@ -167,6 +172,23 @@ fi
 if ! command -v ssh >/dev/null 2>&1; then
     echo "ERROR: ssh (OpenSSH client) is required but not found." >&2
     exit 1
+fi
+
+if [ "${SKIP_GUM_CHECK}" -eq 0 ]; then
+    if ! command -v gum >/dev/null 2>&1; then
+        echo "ERROR: gum is required but not found." >&2
+        echo "  Install it from https://github.com/charmbracelet/gum/releases" >&2
+        echo "" >&2
+        echo "  Debian/Ubuntu:" >&2
+        echo "    echo 'deb [signed-by=/usr/share/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *' | sudo tee /etc/apt/sources.list.d/charm.list" >&2
+        echo "    sudo apt update && sudo apt install gum" >&2
+        echo "" >&2
+        echo "  macOS:" >&2
+        echo "    brew install gum" >&2
+        echo "" >&2
+        echo "  Or skip this check with --skip-gum-check." >&2
+        exit 1
+    fi
 fi
 
 if [ ! -d "${BIN_DIR}" ]; then

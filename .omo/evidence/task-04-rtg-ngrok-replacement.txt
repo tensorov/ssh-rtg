@@ -1,0 +1,51 @@
+=== TASK 04: Go module scaffold ===
+Status: passed
+Files changed:
+  - go.mod (module github.com/tensorov/reverse-ssh-gateway, go 1.22)
+  - cmd/rtg-orchestrator/main.go
+  - cmd/rtg-orchestrator/main_test.go
+  - Makefile (build-orchestrator, test-orchestrator, vet-orchestrator)
+
+go test: PASS
+=== RUN   TestHealthEndpoint
+--- PASS: TestHealthEndpoint (0.00s)
+=== RUN   TestHealthEndpointReturns200
+--- PASS: TestHealthEndpointReturns200 (0.00s)
+PASS
+ok  	github.com/tensorov/reverse-ssh-gateway/cmd/rtg-orchestrator	0.003s
+
+QA evidence:
+--- Binary info ---
+size: 5.9M
+type: ELF 64-bit LSB executable, x86-64, statically linked, stripped
+ldd: not a dynamic executable
+
+--- Health endpoint ---
+$ bin/rtg-orchestrator --port 9999 --data-dir /tmp/xxx/data --config-dir /tmp/xxx/config &
+$ curl -s localhost:9999/v1/health
+{"status":"ok","uptime":"1.003374875s","services_count":0}
+
+--- Graceful shutdown (SIGTERM) ---
+exit code: 0
+logs: "shutting down gracefully..." / "server stopped"
+
+--- --help shows all flags ---
+  -config-dir string
+    	Traefik dynamic config directory (default "/etc/traefik/dynamic/tunnels/")
+  -data-dir string
+    	Service registry data directory (default "/var/lib/rtg-orchestrator/")
+  -port int
+    	HTTP server port (default 8443)
+
+--- Adversarial: malformed --port=abc ---
+exit: 2, error: "invalid value \"abc\" for flag -port: parse error"
+
+--- Adversarial: port already in use ---
+exit: 1, error: "listen tcp :9998: bind: address already in use"
+
+--- go vet ---
+exit: 0 (clean)
+
+--- make build-orchestrator ---
+CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/rtg-orchestrator ./cmd/rtg-orchestrator/
+-> bin/rtg-orchestrator: 5.9MB, static ELF

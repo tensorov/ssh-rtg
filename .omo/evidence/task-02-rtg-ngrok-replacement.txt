@@ -1,0 +1,58 @@
+=== TASK 02: TUI script creation ===
+Status: passed
+Files changed: client-script/rtg-tui.sh
+
+Changes made:
+- Created client-script/rtg-tui.sh — a gum-based TUI for SSH tunnel management
+- 5 menu screens in an infinite navigation loop via `gum choose`:
+  1. Status dashboard: systemctl is-active, uptime from ActiveEnterTimestamp, port forwards parsed from config
+  2. Port list: gum table with PORT | LOCAL | STATUS columns from PORTS config variable
+  3. Start/Stop/Restart: gum confirm → systemctl {start|stop|restart} → gum spin → status verification
+  4. Logs: journalctl -u ssh-tunnel --no-pager -n 50 | gum pager
+  5. Exit: gum confirm → clean exit
+- --install flag: detects if tunnel service is installed, offers to run install.sh
+- --help / -h flag: docs and menu overview
+- Gum prerequisite check: detects missing gum, prints installation instructions, exit 1
+- Service not found handling: graceful message in each screen, no crash
+- Config discovery: same search order as tunnel.sh (TUNNEL_CONFIG env → /etc/reverse-ssh-gateway/config.env → ./config.env)
+- Port parsing: reads PORTS variable (space-separated remote=local pairs) from config
+- No systemd unit created (interactive tool only)
+- No modification to tunnel.sh (read-only)
+- No Dialog/Whiptail — gum only (gum style, spin, choose, table, confirm, pager)
+
+shellcheck: clean (no output = no warnings/errors)
+
+QA evidence:
+
+1) shellcheck:
+$ shellcheck client-script/rtg-tui.sh
+EXIT_CODE=0
+Output: (none — clean)
+
+2) --help shows 5 menu items + options:
+$ bash client-script/rtg-tui.sh --help
+Usage: bash rtg-tui.sh [OPTIONS]
+...
+Menu items:
+  Status      Live status dashboard (active / inactive / not found)
+  Ports       Table view of forwarded port mappings
+  Start/Stop  Start, stop, or restart the tunnel service
+  Logs        View recent service logs (last 50 lines)
+  Exit        Cleanly exit the TUI
+EXIT_CODE=0
+
+3) Unknown flag → exit 1:
+$ bash client-script/rtg-tui.sh --bogus
+Unknown option: --bogus
+Use --help for usage.
+EXIT_CODE=1
+
+4) Gum not installed → exit 1 with install instructions:
+$ bash client-script/rtg-tui.sh
+ERROR: gum (charmbracelet/gum) is required but not found.
+  Install: https://github.com/charmbracelet/gum/releases
+  ...
+EXIT_CODE=1
+
+5) Config parsing verified:
+$ source parse_ports test → CFG: .../config.env, PORTS=2022=22

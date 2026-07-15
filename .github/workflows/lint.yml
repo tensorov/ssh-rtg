@@ -6,6 +6,11 @@ on:
     branches: [main]
     paths:
       - "ansible/**"
+      - "cmd/**"
+      - "internal/**"
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
       - ".github/workflows/lint.yml"
       - ".ansible-lint"
       - ".yamllint"
@@ -13,6 +18,11 @@ on:
     branches: [main]
     paths:
       - "ansible/**"
+      - "cmd/**"
+      - "internal/**"
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
       - ".github/workflows/lint.yml"
       - ".ansible-lint"
       - ".yamllint"
@@ -51,3 +61,18 @@ jobs:
           cd ansible
           ansible-playbook --syntax-check playbooks/deploy-client.yml
           ansible-playbook --syntax-check playbooks/deploy-server.yml
+
+  build-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Lint
+        run: |
+          go vet ./...
+      - name: Build
+        run: CGO_ENABLED=0 go build -ldflags="-s -w" -o /dev/null ./cmd/rtg-orchestrator/
+      - name: Test
+        run: go test ./... -v -count=1
