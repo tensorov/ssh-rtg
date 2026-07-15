@@ -165,6 +165,11 @@ while [ "${_caught_signal}" -eq 0 ]; do
     log "Connecting to ${GATEWAY_HOST} ..."
 
     # shellcheck disable=SC2086,SC2153
+    # accept-new: accept unknown host keys on first connect, then pin.
+    # This is a deliberate trade-off for unattended operation — the alternative
+    # (StrictHostKeyChecking=no) would accept any key every time.
+    # For higher security, pre-provision the known_hosts file and switch to
+    # StrictHostKeyChecking=yes.
     if ssh \
         -i "${SSH_KEY_PATH}" \
         -p "${GATEWAY_PORT}" \

@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "active_work_id": "security-fixes",
+  "works": {
+    "security-fixes": {
+      "work_id": "security-fixes",
+      "active_plan": ".omo/plans/security-fixes.md",
+      "plan_name": "security-fixes",
+      "session_ids": ["opencode:current"],
+      "status": "active",
+      "worktree_path": null
+    }
+  }
+}

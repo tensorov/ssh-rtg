@@ -1,3 +1,3 @@
-module github.com/tensorov/reverse-ssh-gateway
+module github.com/tensorov/ssh-rtg
 
 go 1.22

@@ -214,10 +214,11 @@ The project includes Go-based CLI tools for service mesh operations beyond the A
 go build -o bin/rtg-orchestrator ./cmd/rtg-orchestrator
 
 # Run with defaults (port 8443, config to /etc/traefik/dynamic/tunnels/)
-./bin/rtg-orchestrator
+./bin/rtg-orchestrator -bind 127.0.0.1
 
 # Run with custom paths
 ./bin/rtg-orchestrator \
+  -bind 127.0.0.1 \
   -port 9090 \
   -config-dir /etc/traefik/dynamic/tunnels/ \
   -data-dir /var/lib/rtg-orchestrator/
@@ -231,6 +232,12 @@ go build -o bin/rtg-orchestrator ./cmd/rtg-orchestrator
 4. Background cleanup loop runs every 30s, removing services whose `last_seen` exceeds `TTL * 3`.
 5. Only re-writes config when the service list changes -- avoids unnecessary Traefik reloads.
 6. Graceful shutdown on SIGTERM/SIGINT with a 10s drain timeout.
+
+> [!NOTE]
+> Orchestrator binds to localhost by default (`-bind 127.0.0.1`).
+> If you must expose it externally, set `-bind 0.0.0.0` and put a
+> reverse proxy with authentication (Basic Auth, mTLS, or similar)
+> in front — the API has no built-in auth.
 
 #### HTTP API
 

@@ -1,6 +1,6 @@
 [Unit]
 Description=Sync Traefik dynamic config from primary VPS
-Documentation=https://github.com/tensorov/reverse-ssh-gateway
+Documentation=https://github.com/tensorov/ssh-rtg
 After=network-online.target
 Wants=network-online.target
 

@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tensorov/reverse-ssh-gateway/internal/configgen"
-	"github.com/tensorov/reverse-ssh-gateway/internal/registry"
+	"github.com/tensorov/ssh-rtg/internal/configgen"
+	"github.com/tensorov/ssh-rtg/internal/registry"
 )
 
 var (
@@ -174,6 +174,7 @@ func main() {
 	port := flag.Int("port", 8443, "HTTP server port")
 	configDir := flag.String("config-dir", "/etc/traefik/dynamic/tunnels/", "Traefik dynamic config directory")
 	dataDir := flag.String("data-dir", "/var/lib/rtg-orchestrator/", "Service registry data directory")
+	bind := flag.String("bind", "127.0.0.1", "Bind address (set to 0.0.0.0 to expose publicly — ensure firewall or reverse-proxy auth is in place)")
 	flag.Parse()
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
@@ -183,7 +184,7 @@ func main() {
 	servicesDir := filepath.Join(*dataDir, "services")
 	handler := setupHandlers(*dataDir, *configDir)
 
-	addr := fmt.Sprintf(":%d", *port)
+	addr := fmt.Sprintf("%s:%d", *bind, *port)
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           handler,

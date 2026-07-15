@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tensorov/reverse-ssh-gateway/internal/registry"
+	"github.com/tensorov/ssh-rtg/internal/registry"
 )
 
 // setupTestDir creates a temporary directory for testing.

@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tensorov/reverse-ssh-gateway/internal/registry"
+	"github.com/tensorov/ssh-rtg/internal/registry"
 )
 
 // configFileName is the name of the generated Traefik config file.
