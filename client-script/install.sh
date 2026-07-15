@@ -16,6 +16,7 @@
 #   --ports  REMOTE:LOCAL,...   Comma-separated port mappings
 #   --config PATH               Path to config.env to install
 #   --service-name NAME         Systemd service name (default: ssh-tunnel)
+#   --with-tui                  Install rtg-tui (gum-based TUI) alongside tunnel.sh
 #   --skip-gum-check            Skip the gum dependency check (for CI)
 #   --uninstall                 Remove the service and all installed files
 #   --help                      Show this message
@@ -32,6 +33,7 @@ JUMP_HOST=""
 PORTS_STR=""
 CONFIG_SRC=""
 DO_UNINSTALL=0
+WITH_TUI=0
 SKIP_GUM_CHECK=0
 
 # ===========================================================================
@@ -57,6 +59,9 @@ while [ $# -gt 0 ]; do
             ;;
         --uninstall)
             DO_UNINSTALL=1
+            ;;
+        --with-tui)
+            WITH_TUI=1
             ;;
         --skip-gum-check)
             SKIP_GUM_CHECK=1
@@ -86,6 +91,7 @@ if [ "${DO_UNINSTALL}" -eq 1 ]; then
     fi
 
     rm -f "${BIN_DIR}/tunnel.sh"
+    rm -f "${BIN_DIR}/rtg-tui"
     rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
     systemctl daemon-reload 2>/dev/null || true
 
@@ -95,6 +101,7 @@ if [ "${DO_UNINSTALL}" -eq 1 ]; then
 
     echo "  Done. Removed:"
     echo "    ${BIN_DIR}/tunnel.sh"
+    echo "    ${BIN_DIR}/rtg-tui"
     echo "    /etc/systemd/system/${SERVICE_NAME}.service"
     echo "    ${CONFIG_DIR}/"
     exit 0
@@ -259,6 +266,40 @@ echo "  Control:  systemctl {start|stop|restart|status} ${SERVICE_NAME}"
 echo "  Logs:     journalctl -fu ${SERVICE_NAME}"
 echo ""
 echo "To start the tunnel now:  systemctl start ${SERVICE_NAME}"
+
+# ===========================================================================
+# Optional: Install rtg-tui (gum-based TUI)
+# ===========================================================================
+TUI_INSTALLED=0
+if [ "${WITH_TUI}" -eq 1 ]; then
+    TUI_INSTALLED=1
+elif command -v gum >/dev/null 2>&1; then
+    if gum confirm "Install the TUI (rtg-tui) for interactive tunnel management?"; then
+        TUI_INSTALLED=1
+    fi
+fi
+
+if [ "${TUI_INSTALLED}" -eq 1 ]; then
+    TUI_SRC="${SCRIPT_DIR}/rtg-tui.sh"
+    TUI_BIN="${BIN_DIR}/rtg-tui"
+    if [ -f "${TUI_SRC}" ]; then
+        cp "${TUI_SRC}" "${TUI_BIN}"
+        chmod 755 "${TUI_BIN}"
+        echo "  TUI:    ${TUI_BIN}"
+        # Offer to launch the TUI now
+        if command -v gum >/dev/null 2>&1; then
+            echo ""
+            if gum confirm "Launch the TUI now to configure and start tunnels?"; then
+                echo ""
+                "${TUI_BIN}"
+            fi
+        else
+            echo "  Run 'rtg-tui' to manage tunnels interactively."
+        fi
+    else
+        echo "  WARNING: rtg-tui.sh not found at ${TUI_SRC}, skipping TUI install." >&2
+    fi
+fi
 
 # Clean up temp file
 if [ -n "${TMP_CONFIG}" ]; then

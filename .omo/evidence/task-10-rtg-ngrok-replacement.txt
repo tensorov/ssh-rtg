@@ -1,0 +1,15 @@
+=== TASK 10: Server role GatewayPorts automation ===
+Status: passed
+Files modified:
+  - ansible/roles/ssh-tunnel-server/tasks/main.yml — 2 lineinfile tasks to set GatewayPorts yes
+  - ansible/roles/ssh-tunnel-server/handlers/main.yml — restart sshd handler
+
+QA evidence:
+  ansible-playbook --syntax-check playbooks/deploy-server.yml (from ansible/ dir) → exit 0
+  ansible-lint ansible/roles/ssh-tunnel-server/ → exit 0 (0 failures, 0 warnings)
+
+Key design decisions:
+  - Two lineinfile tasks: first uncomments/replaces `GatewayPorts`, second catches commented-out copies
+  - Handler only fires on actual change (Ansible's standard notify-on-change)
+  - No sshd_port or other sshd settings touched (scoped to GatewayPorts only)
+  - Uses systemd module (not service module) for sshd restart

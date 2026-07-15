@@ -1,0 +1,15 @@
+[Unit]
+Description=UDP Bridge {{ item.name }} (TCP→UDP)
+Documentation=https://github.com/tensorov/reverse-ssh-gateway
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/socat TCP4-LISTEN:{{ item.remote_port }},fork,reuseaddr UDP4:127.0.0.1:{{ item.local_port }}
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,30 @@
+Work Item: W1-T3 Traefik dynamic config generator
+Date: 2026-07-15
+Status: COMPLETE
+
+## Summary
+Implemented Traefik dynamic config generator in internal/configgen/ with TDD. Stdlib only — YAML built via strings.Builder, no external deps. Atomic writes with temp-file + rename.
+
+## Files Created
+- internal/configgen/traefik.go — Generate(), safeName(), buildYAML(), writeHTTPRouter(), writeHTTPService(), writeTCPRouter(), writeTCPService(), atomicWrite()
+- internal/configgen/traefik_test.go — 10 tests covering all states
+
+## Files Modified
+- cmd/rtg-orchestrator/main.go — Wire configgen call after register, delete, and cleanup (not heartbeat)
+
+## Test Results
+- go vet ./... → PASS (0 warnings)
+- go test ./internal/configgen/... → 10 tests, 0.002s
+- go test -race ./... → PASS (3 packages: orchestrator, configgen, registry)
+- go build ./... → PASS
+
+## Key Design Decisions
+- Stdlib only: strings.Builder for YAML, no gopkg.in/yaml.v3
+- Atomic write: .tmp → rename(2) prevents partial writes on power loss
+- HTTP service with Domain → HTTP router + HTTPS/TLS router + service
+- TCP service (no Domain) → TCP router + service
+- HTTP service without Domain → silently skipped
+- invalid Proto → silently skipped
+- safeName() sanitizes host:port to DNS-safe label (dash on dots/colons)
+- Wired in 3 places: register handler, delete handler, cleanup goroutine (len(removed) > 0)
+- NOT wired in heartbeat handler (no config change)

@@ -1,0 +1,15 @@
+[Unit]
+Description=Sync Traefik dynamic config from primary VPS
+Documentation=https://github.com/tensorov/reverse-ssh-gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sync-traefik-config.sh
+EnvironmentFile=-/etc/default/sync-traefik-config
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

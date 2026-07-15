@@ -1,0 +1,11 @@
+[Unit]
+Description=Sync Traefik config from primary VPS (every 1 minute)
+Documentation=https://github.com/tensorov/reverse-ssh-gateway
+
+[Timer]
+OnCalendar=*:0/1
+Persistent=true
+RandomizedDelaySec=5
+
+[Install]
+WantedBy=timers.target

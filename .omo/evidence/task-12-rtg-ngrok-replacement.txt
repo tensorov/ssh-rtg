@@ -1,0 +1,17 @@
+=== TASK 12: Server role Traefik entryPoint validation ===
+Status: passed
+Files modified:
+  - ansible/roles/ssh-tunnel-server/tasks/main.yml — added shell task to validate entryPoints
+  - ansible/roles/ssh-tunnel-server/templates/traefik-tcp-routes.yml.j2 — added copy-paste comment block
+
+QA evidence:
+  ansible-playbook --syntax-check playbooks/deploy-server.yml (from ansible/ dir) → exit 0
+  ansible-lint ansible/roles/ssh-tunnel-server/ → exit 0 (0 failures, 0 warnings, 9 files processed)
+
+Key design decisions:
+  - Validation is a shell task that greps /etc/traefik/traefik.yml for each tunnel-<port> entryPoint
+  - Task fails with clear "MISSING: entryPoint tunnel-X" messages if any port is missing
+  - Does NOT modify traefik.yml (user manages static config separately)
+  - Comment block in template provides copy-paste entryPoints snippet for all configured ports
+  - warn: false suppresses shell module deprecation warning
+  - changed_when: false because this is a read-only validation check

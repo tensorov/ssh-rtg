@@ -25,3 +25,11 @@ ssh_tunnel_enable_ip_forwarding: true
 
 # Restrict tunnel listener to specific source CIDR (default: all)
 ssh_tunnel_allowed_remote_hosts: "0.0.0.0/0"
+
+# UDP-to-TCP bridges: socat on the VPS converts TCP (from SSH tunnel) back
+# to UDP for the final destination (e.g., WireGuard, DNS).
+#   name:         unique systemd unit name (alphanumeric + hyphen)
+#   local_port:   UDP port on the VPS (final listener)
+#   remote_port:  TCP port from the SSH tunnel
+#   description:  human-readable label
+ssh_tunnel_server_udp_bridges: []

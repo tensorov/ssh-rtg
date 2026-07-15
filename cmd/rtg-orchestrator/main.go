@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/tensorov/reverse-ssh-gateway/internal/configgen"
 	"github.com/tensorov/reverse-ssh-gateway/internal/registry"
 )
 
@@ -61,6 +62,19 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 func setupHandlers(dataDir, configDir string) http.Handler {
 	servicesDir := filepath.Join(dataDir, "services")
 
+	// regenerateConfig reads all alive services and regenerates the Traefik
+	// dynamic config file. Called after register, delete, and cleanup.
+	regenerateConfig := func() {
+		services, err := registry.ListServices(servicesDir, "alive")
+		if err != nil {
+			slog.Error("failed to list services for configgen", "error", err)
+			return
+		}
+		if err := configgen.Generate(services, configDir); err != nil {
+			slog.Error("failed to regenerate Traefik config", "error", err)
+		}
+	}
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /v1/health", func(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +111,7 @@ func setupHandlers(dataDir, configDir string) http.Handler {
 		}
 
 		writeJSON(w, http.StatusOK, resp)
+		regenerateConfig()
 	})
 
 	mux.HandleFunc("POST /v1/services/heartbeat", func(w http.ResponseWriter, r *http.Request) {
@@ -149,9 +164,8 @@ func setupHandlers(dataDir, configDir string) http.Handler {
 		}
 
 		w.WriteHeader(http.StatusNoContent)
+		regenerateConfig()
 	})
-
-	_ = configDir // used in later tasks
 
 	return loggingMiddleware(mux)
 }
@@ -199,6 +213,12 @@ func main() {
 				removed := registry.Cleanup(servicesDir)
 				if len(removed) > 0 {
 					slog.Info("cleanup removed expired services", "count", len(removed), "services", removed)
+					services, err := registry.ListServices(servicesDir, "alive")
+					if err != nil {
+						slog.Error("failed to list services after cleanup", "error", err)
+					} else if err := configgen.Generate(services, *configDir); err != nil {
+						slog.Error("failed to regenerate config after cleanup", "error", err)
+					}
 				}
 			}
 		}

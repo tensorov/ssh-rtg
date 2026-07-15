@@ -1,0 +1,20 @@
+# Keepalived VRRP authentication password
+# ==========================================
+# This file contains the VRRP authentication password used by both
+# VPS A (primary) and VPS H (backup) for VRID 51.
+#
+# Security:
+#   - chmod 600 this file: chmod 600 keepalived.auth
+#   - Use a strong random password (20+ characters, alphanumeric + symbols)
+#   - Keepalived auth_pass is limited to 8 characters by the VRRP protocol
+#   - Do NOT commit this file to version control with the real password
+#
+# Usage:
+#   1. Generate a password: openssl rand -base64 12 | cut -c1-8
+#   2. Replace the placeholder below with the generated password
+#   3. Replace REPLACE_WITH_SECURE_PASSWORD in both keepalived-*.conf files
+#      with the same password
+#   4. Copy this file to /etc/keepalived/keepalived.auth on both VPS A and VPS H
+#   5. Set permissions: chmod 600 /etc/keepalived/keepalived.auth
+
+REPLACE_WITH_SECURE_PASSWORD

@@ -1,0 +1,28 @@
+=== TASK 13: Client role port validation + health check ===
+Status: passed
+Files modified:
+  - ansible/roles/ssh-tunnel-client/tasks/main.yml — added assert tasks for non-empty ports + valid ranges
+  - ansible/roles/ssh-tunnel-client/defaults/main.yml — added ssh_tunnel_health_check_ports var
+  - ansible/roles/ssh-tunnel-client/templates/tunnel.sh.j2 — added optional TCP /dev/tcp health check
+
+Part A confirmation (all already present in tunnel.sh.j2):
+  - set -euo pipefail ✅
+  - Exponential backoff 1s→60s ✅
+  - ControlMaster/ControlPersist ✅
+  - SSH keepalive (ServerAliveInterval/CountMax) ✅
+  - Cleanup handler (SIGTERM/SIGINT) ✅
+
+Validation added:
+  - assert: ssh_tunnel_ports not empty (fail_msg)
+  - assert: each local_port and remote_port in range 1-65535
+
+Health check added:
+  - ssh_tunnel_health_check_ports: list of remote_port values (default [])
+  - When non-empty, generates health_check() function probing /dev/tcp/127.0.0.1:<port> with 3s timeout
+  - One-shot check runs on FIRST successful SSH connection
+  - Logs "HEALTH: all tunnel ports are reachable" or "HEALTH WARNING: some ports unreachable"
+  - FIRST_CHECK unset after first run (one-shot only)
+
+QA evidence:
+  ansible-playbook --syntax-check playbooks/deploy-client.yml → exit 0
+  ansible-lint ansible/roles/ssh-tunnel-client/ → exit 0 (0 failures, 0 warnings, 8 files processed)

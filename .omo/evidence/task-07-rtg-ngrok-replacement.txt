@@ -1,0 +1,26 @@
+=== TASK 07: Keepalived config ===
+Status: passed
+Files created: deploy/keepalived/keepalived-vps-a.conf, keepalived-vps-h.conf, keepalived.auth, README.md
+QA evidence:
+  # VPS A (MASTER) — priority 100, state MASTER, preempt, vrrp_script chk_traefik
+  $ grep -n "priority\|state MASTER\|vrrp_script\|preempt\|virtual_ipaddress\|auth_type\|track_script" deploy/keepalived/keepalived-vps-a.conf
+  state MASTER, priority 100, preempt, vrrp_script chk_traefik, auth_type PASS, track_script chk_traefik, virtual_ipaddress 10.0.0.10/24
+
+  # VPS H (BACKUP) — priority 90, state BACKUP, no preempt, vrrp_script chk_traefik
+  $ grep -n "priority\|state BACKUP\|vrrp_script\|preempt\|virtual_ipaddress\|auth_type\|track_script" deploy/keepalived/keepalived-vps-h.conf
+  state BACKUP, priority 90, no preempt (no preempt directive present), vrrp_script chk_traefik, auth_type PASS, track_script chk_traefik, virtual_ipaddress 10.0.0.10/24
+
+  # Auth file — placeholder, chmod 600 documented
+  $ head -5 deploy/keepalived/keepalived.auth
+  Contains REPLACE_WITH_SECURE_PASSWORD placeholder, documents chmod 600 requirement
+
+  # README — installation steps coverage
+  $ grep -c "Install\|Copy\|Enable\|Test" deploy/keepalived/README.md
+  9 (covers all 4 required sections)
+
+  # Config-test not available (keepalived not installed), manual review confirms:
+  # - Both configs have identical vrrp_script chk_traefik block (script, interval 2, fall 2, rise 2)
+  # - Same VRID 51, same VIP 10.0.0.10/24, same interface eth0 (with change comment)
+  # - VPS A: state MASTER, priority 100, preempt
+  # - VPS H: state BACKUP, priority 90, no preempt
+  # - Both use auth_type PASS with REPLACE_WITH_SECURE_PASSWORD placeholder

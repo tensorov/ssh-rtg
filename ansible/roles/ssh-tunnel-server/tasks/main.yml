@@ -43,3 +43,46 @@
     shell: /usr/sbin/nologin
     create_home: false
     comment: "Reverse SSH tunnel user"
+
+- name: Ensure GatewayPorts is enabled in sshd_config
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?GatewayPorts\s'
+    line: 'GatewayPorts yes'
+    state: present
+  notify: restart sshd
+
+- name: Ensure GatewayPorts is not commented after the line
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^\s*#\s*GatewayPorts'
+    line: 'GatewayPorts yes'
+    state: present
+  notify: restart sshd
+
+- name: Install socat for UDP bridges
+  ansible.builtin.package:
+    name: socat
+    state: present
+  when: ssh_tunnel_server_udp_bridges | length > 0
+
+- name: Template UDP bridge systemd service
+  ansible.builtin.template:
+    src: udp-bridge.service.j2
+    dest: "/etc/systemd/system/udp-bridge-{{ item.name }}.service"
+    mode: "0644"
+  loop: "{{ ssh_tunnel_server_udp_bridges }}"
+  notify: restart udp bridges
+
+- name: Validate Traefik entryPoints exist for each tunnel port
+  ansible.builtin.shell:
+    cmd: |
+      for port in {{ ssh_tunnel_ports | map(attribute='remote_port') | join(' ') }}; do
+        if ! grep -q "tunnel-${port}:" /etc/traefik/traefik.yml 2>/dev/null; then
+          echo "MISSING: entryPoint tunnel-${port} not found in /etc/traefik/traefik.yml"
+        fi
+      done
+    warn: false
+  changed_when: false
+  register: _entrypoint_check
+  failed_when: _entrypoint_check.stdout_lines | length > 0

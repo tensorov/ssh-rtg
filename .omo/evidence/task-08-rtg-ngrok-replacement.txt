@@ -1,0 +1,23 @@
+=== TASK 08: rsync config sync ===
+Status: passed
+Files created:
+  - deploy/sync/sync-traefik-config.sh — rsync pull script with env var overrides
+  - deploy/sync/sync-traefik-config.service — systemd oneshot unit
+  - deploy/sync/sync-traefik-config.timer — systemd timer (every 1 min, Persistent=true, RandomizedDelaySec=5)
+  - deploy/sync/README.md — 5-step install guide with recovery instructions
+
+QA evidence:
+  shellcheck deploy/sync/sync-traefik-config.sh → exit 0 (no warnings)
+  systemd-analyze verify sync-traefik-config.timer → exit 0
+  systemd-analyze verify sync-traefik-config.service → exit 1 (only "not executable" for
+    /usr/local/bin/sync-traefik-config.sh — expected locally, not deployed)
+
+Key design decisions:
+  - Pull-based (destination pulls FROM source), matching HA pattern where backup
+    pulls config from primary
+  - EnvironmentFile at /etc/default/sync-traefik-config for SYNC_SRC_HOST
+    (no hardcoded IPs)
+  - --delete flag ensures stale configs on backup are removed
+  - systemctl reload traefik after successful sync
+  - RandomizedDelaySec=5 prevents thundering herd on timer sync
+  - One-directional by design; recovery section documents reverse sync

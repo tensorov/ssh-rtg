@@ -1,0 +1,19 @@
+=== TASK 11: Server role UDP socat counterpart ===
+Status: passed
+Files modified:
+  - ansible/roles/ssh-tunnel-server/defaults/main.yml — added ssh_tunnel_server_udp_bridges var
+  - ansible/roles/ssh-tunnel-server/tasks/main.yml — added socat install + template tasks
+  - ansible/roles/ssh-tunnel-server/handlers/main.yml — added restart udp bridges handler
+Files created:
+  - ansible/roles/ssh-tunnel-server/templates/udp-bridge.service.j2 — socat TCP-LISTEN → UDP
+
+QA evidence:
+  ansible-playbook --syntax-check playbooks/deploy-server.yml (from ansible/ dir) → exit 0
+  ansible-lint ansible/roles/ssh-tunnel-server/ → exit 0 (0 failures, 0 warnings, 9 files processed)
+
+Key design decisions:
+  - Systemd template via loop (no @ template unit — each bridge gets a named unit)
+  - socat install only when ssh_tunnel_server_udp_bridges is non-empty
+  - Handler restarts all bridge units via loop
+  - remote_port = TCP from tunnel, local_port = UDP final destination
+    (explicit naming to prevent confusion)

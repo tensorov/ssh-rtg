@@ -3,6 +3,22 @@
 # Entry point that handles user setup, SSH key provisioning, template deployment,
 # service registration, and delegates to config.yml for auxiliary config files.
 
+- name: Validate ssh_tunnel_ports is not empty
+  ansible.builtin.assert:
+    that: ssh_tunnel_ports | length > 0
+    fail_msg: "ssh_tunnel_ports is empty — no tunnels configured"
+    quiet: true
+
+- name: Validate port ranges
+  ansible.builtin.assert:
+    that:
+      - item.local_port | int > 0
+      - item.local_port | int < 65536
+      - item.remote_port | int > 0
+      - item.remote_port | int < 65536
+    fail_msg: "Invalid port in {{ item.description | default('unknown') }}: local_port={{ item.local_port }}, remote_port={{ item.remote_port }}"
+  loop: "{{ ssh_tunnel_ports }}"
+
 - name: Create tunnel system user
   ansible.builtin.user:
     name: "{{ ssh_tunnel_user }}"

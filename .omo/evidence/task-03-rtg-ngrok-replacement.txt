@@ -1,0 +1,20 @@
+=== TASK 03: TUI installation integration ===
+Status: passed
+Files changed: client-script/install.sh
+shellcheck: PASS (exit 0)
+
+QA evidence:
+  # --with-tui flag parsing
+  $ grep -n "with-tui" client-script/install.sh
+  line 19: help text, line 63: case --with-tui, line 36: WITH_TUI=0 default
+  
+  # Uninstall cleanup
+  $ grep -n "rtg-tui" client-script/install.sh
+  Multiple matches including: help text, flag parsing, uninstall cleanup (rm -f), uninstall message
+  
+  # TUI install block (lines 270-293)
+  [sudo doesn't exist locally, verified via manual test: cp rtg-tui.sh to /tmp/rtg-test/bin/rtg-tui, chmod 755, file exists executable]
+  
+  # shellcheck
+  $ shellcheck client-script/install.sh
+  Exit code: 0 (no warnings, no errors)

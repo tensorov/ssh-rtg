@@ -146,7 +146,7 @@
   - Failure: нет systemd юнита → сообщение "Service not found"
   Commit: Y | `feat(tui): add gum-based TUI for tunnel management`
 
-- [ ] 3. Интегрировать TUI в install.sh
+- [x] 3. Интегрировать TUI в install.sh
   What to do / Must NOT do:
   - В `client-script/install.sh` скопировать `rtg-tui.sh` в `/usr/local/bin/rtg-tui` (chmod 755)
   - Добавить флаг `--with-tui` для установки TUI (по умолчанию — нет, чтобы не менять поведение существующих пользователей)
@@ -241,7 +241,7 @@
   - Failure: TTL expired → сервис исчезает из списка. Evidence: register TTL=1 → wait 4s → list empty
   Commit: Y | `feat(orchestrator): implement service registry CRUD + heartbeat`
 
-- [ ] 6. Реализовать генерацию Traefik dynamic config
+- [x] 6. Реализовать генерацию Traefik dynamic config
   What to do / Must NOT do: В `internal/configgen/traefik.go`:
   - При каждом изменении реестра (register/heartbeat/delete/cleanup):
     1. Прочитать все живые сервисы из `{data-dir}/services/`
@@ -294,7 +294,7 @@
 
 ### Wave 2 — Multi-VPS инфраструктура
 
-- [ ] 7. Создать Keepalived конфигурацию (A primary, H backup)
+- [x] 7. Создать Keepalived конфигурацию (A primary, H backup)
   What to do / Must NOT do: Создать `deploy/keepalived/keepalived-vps-a.conf` и `deploy/keepalived/keepalived-vps-h.conf`:
   - VPS A (primary): `priority 100`, `state MASTER`
   - VPS H (backup): `priority 90`, `state BACKUP`
@@ -325,7 +325,7 @@
   - Failure: файл `keepalived.auth` защищён (chmod 600). Evidence: `stat -c %a deploy/keepalived/keepalived.auth`
   Commit: Y | `feat(ha): add Keepalived config for VPS A (primary) and H (backup)`
 
-- [ ] 8. Создать rsync config sync (systemd timer)
+- [x] 8. Создать rsync config sync (systemd timer)
   What to do / Must NOT do: Создать `deploy/sync/sync-traefik-config.sh`:
   ```bash
   #!/bin/bash
@@ -365,7 +365,7 @@
   - Failure: SSH ключ не найден → exit 1, лог. Evidence: запуск без ключа
   Commit: Y | `feat(ha): add rsync config sync with systemd timer`
 
-- [ ] 9. Создать Linux-шлюз для ESP32
+- [x] 9. Создать Linux-шлюз для ESP32
   What to do / Must NOT do: Создать `deploy/gateway/esp32-gateway@.service` (systemd template unit):
   ```ini
   [Unit]
@@ -428,7 +428,7 @@
 
 ### Wave 3 — Ansible role improvements
 
-- [ ] 10. Server role: GatewayPorts automation
+- [x] 10. Server role: GatewayPorts automation
   What to do / Must NOT do: В `ansible/roles/ssh-tunnel-server/tasks/main.yml` добавить:
   ```yaml
   - name: Ensure GatewayPorts is enabled in sshd_config
@@ -468,7 +468,7 @@
   - Failure: sshd_config не существует → Ansible ошибка. Evidence: play recap = failed
   Commit: Y | `feat(ansible): automate GatewayPorts yes in sshd_config`
 
-- [ ] 11. Server role: UDP socat counterpart
+- [x] 11. Server role: UDP socat counterpart
   What to do / Must NOT do: 
   - В `ansible/roles/ssh-tunnel-server/defaults/main.yml` добавить:
     ```yaml
@@ -527,7 +527,7 @@
   - Failure: socat не установлен → playbook устанавливает. Evidence: pre/post install test
   Commit: Y | `feat(ansible): add server-side UDP socat bridge`
 
-- [ ] 12. Server role: Traefik entryPoint validation
+- [x] 12. Server role: Traefik entryPoint validation
   What to do / Must NOT do: В `ansible/roles/ssh-tunnel-server/tasks/main.yml` добавить:
   ```yaml
   - name: Validate Traefik entryPoints exist for each tunnel port
@@ -566,7 +566,7 @@
   - Happy: comment блок в сгенерированном файле. Evidence: `grep "REQUIRED STATIC" {config_file}`
   Commit: Y | `feat(ansible): add Traefik entryPoint validation + docs`
 
-- [ ] 13. Client role: деплой robust шаблона + port sync assert + health check
+- [x] 13. Client role: деплой robust шаблона + port sync assert + health check
   What to do / Must NOT do:
   **A. Деплой robust tunnel.sh на прод:**
   - Убедиться, что `ansible/roles/ssh-tunnel-client/templates/tunnel.sh.j2` уже содержит:

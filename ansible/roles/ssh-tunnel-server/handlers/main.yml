@@ -14,6 +14,19 @@
   changed_when: true
   when: ssh_tunnel_firewall_type == "ufw"
 
+- name: restart sshd
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+    daemon_reload: true
+
+- name: restart udp bridges
+  ansible.builtin.systemd:
+    name: "udp-bridge-{{ item.name }}"
+    state: restarted
+    daemon_reload: true
+  loop: "{{ ssh_tunnel_server_udp_bridges }}"
+
 - name: restart ssh-tunnel
   ansible.builtin.systemd:
     name: ssh-tunnel

@@ -67,6 +67,9 @@ Reverse SSH tunnel gateway for exposing NAT'd homelab services through a public 
 - **Auto-reconnect with backoff.** Exponential backoff (1s to 60s cap), reset on clean exit. Dead connections detected via SSH keepalive.
 - **UDP-to-TCP bridging.** Forward UDP services (WireGuard, DNS) through the TCP tunnel using `socat(1)`.
 - **Traefik TCP routing.** Server role generates Traefik dynamic config automatically for each tunneled port.
+- **Automated Traefik config generation.** `rtg-orchestrator` watches Consul for registered tunnels and writes Traefik TCP route config with atomic file updates.
+- **Service mesh config sync.** Pull-based rsync synchronizes the Traefik dynamic config from the primary VPS to backup VPSes every 60 seconds.
+- **Keepalived failover.** VRRP-based VIP failover across the VPS fleet for high availability of tunnel endpoints.
 - **Two deployment paths.** Standalone shell script for single hosts, Ansible roles for multi-host fleets.
 - **Systemd managed.** Both sides run as systemd services with structured syslog logging.
 - **Firewall automation.** Server role opens UFW or nftables rules for each tunneled port.
@@ -168,12 +171,113 @@ reverse-ssh-gateway/
 ├── client-script/
 │   ├── config.env
 │   ├── tunnel.sh
-│   └── install.sh
+│   ├── install.sh
+│   └── rtg-tui.sh               # Gum-based TUI for tunnel management
+├── cmd/
+│   ├── rtg-orchestrator/         # Traefik config generator binary
+│   └── rtg-server/               # Server-side tooling
+├── deploy/
+│   ├── keepalived/               # VRRP failover config (primary/backup)
+│   └── sync/                     # rsync-based Traefik config sync
+├── internal/
+│   └── configgen/                # Go library for Traefik config generation
 ├── LICENSE
 ├── README.md
 ├── .ansible-lint
 └── .yamllint
 ```
+
+## CLI Tools
+
+The project includes Go-based CLI tools for service mesh operations beyond the Ansible roles.
+
+### rtg-orchestrator
+
+`rtg-orchestrator` watches Consul for registered tunnel services and generates the corresponding Traefik TCP route configuration on the primary VPS. It runs as a systemd service alongside Traefik.
+
+```bash
+# Build (from repo root)
+go build -o bin/rtg-orchestrator ./cmd/rtg-orchestrator
+
+# Run (reads Consul from CONSUL_HTTP_ADDR env)
+CONSUL_HTTP_ADDR=127.0.0.1:8500 ./bin/rtg-orchestrator
+
+# Generates YAML to /etc/traefik/dynamic/tunnels/tcp-tunnels.yml
+# Triggers on: register, deregister, cleanup (not heartbeat)
+```
+
+**How it works:**
+
+1. Connects to the local Consul agent via the Catalog API.
+2. Lists all services matching the configured tag (default: `traefik-tunnel`).
+3. Builds a Traefik TCP router + service block per service.
+4. Writes the config atomically (`.tmp` + `rename`) to avoid partial reads.
+5. Only re-writes when the service list changes (skips writes on identity to avoid unnecessary Traefik reloads).
+
+### rtg-tui
+
+The standalone installer (`client-script/install.sh`) can optionally install a gum-based TUI for interactive tunnel management:
+
+```bash
+# Install with TUI
+sudo ./client-script/install.sh --with-tui
+
+# Or install interactively (gum prompts to install TUI)
+sudo ./client-script/install.sh
+
+# After install, launch the TUI
+rtg-tui
+```
+
+The TUI provides a menu-driven interface for starting, stopping, restarting, and monitoring tunnels.
+
+## Service Mesh High Availability
+
+Beyond the single-VPS setup, the project supports a multi-VPS service mesh with config synchronization and failover.
+
+### rsync Config Sync
+
+When running multiple VPSes behind a load balancer, all VPSes need identical Traefik dynamic config. The sync system uses pull-based rsync from the primary:
+
+```
+Primary VPS  ──►  Backup VPS (pulls via rsync every 60s)
+                     ├── Traefik reload after sync
+                     └── RandomizedDelaySec=5 (avoids thundering herd)
+```
+
+Files in `deploy/sync/`:
+
+| File | Purpose |
+|---|---|
+| `sync-traefik-config.sh` | rsync wrapper with --delete, atomic sync |
+| `sync-traefik-config.service` | systemd Oneshot: runs the sync script |
+| `sync-traefik-config.timer` | systemd timer: fires every 1min |
+
+```bash
+# On each backup VPS:
+sudo cp deploy/sync/sync-traefik-config.service /etc/systemd/system/
+sudo cp deploy/sync/sync-traefik-config.timer /etc/systemd/system/
+# Edit EnvironmentFile to set PRIMARY_VPS
+sudo systemctl enable --now sync-traefik-config.timer
+```
+
+### Keepalived Failover
+
+For transparent failover, Keepalived manages a virtual IP (VIP) that floats between VPSes:
+
+```bash
+# Files in deploy/keepalived/:
+keepalived.conf.primary    # Higher priority, owns VIP normally
+keepalived.conf.backup     # Lower priority, takes over on failure
+
+# Run on each VPS:
+apk add keepalived
+cp deploy/keepalived/keepalived.conf.{primary,backup} /etc/keepalived/keepalived.conf
+rc-update add keepalived
+rc-service keepalived start
+```
+
+The VIP stays with the primary VPS under normal operation. If the primary fails health checks, the backup takes over the VIP within seconds (VRRP advertisement interval).
 
 ## Ansible Roles
 

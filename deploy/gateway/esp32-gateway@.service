@@ -1,0 +1,17 @@
+[Unit]
+Description=ESP32 Gateway: %i (socat reverse-proxy)
+After=network-online.target
+PartOf=esp32-gateway.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/socat TCP-LISTEN:%i,fork,reuseaddr TCP:${ESP32_HOST}:${ESP32_PORT}
+Restart=always
+RestartSec=5
+User=nobody
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

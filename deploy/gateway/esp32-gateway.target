@@ -1,0 +1,6 @@
+[Unit]
+Description=ESP32 Gateway — all proxy instances
+Wants=esp32-gateway@3000.service esp32-gateway@3001.service
+
+[Install]
+WantedBy=multi-user.target

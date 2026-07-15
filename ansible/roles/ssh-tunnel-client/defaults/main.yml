@@ -76,6 +76,18 @@ ssh_tunnel_server_alive_interval: 30
 ssh_tunnel_server_alive_count_max: 3
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Health check ports — list of remote_port values to probe via /dev/tcp
+# after the tunnel establishes. A one-shot check runs on first connect.
+# Empty list (default) disables the health check entirely.
+# Example:
+#   ssh_tunnel_health_check_ports:
+#     - 8080
+#     - 2022
+# ---------------------------------------------------------------------------
+ssh_tunnel_health_check_ports: []
+
+# ---------------------------------------------------------------------------
 # Systemd service name — used for the unit file path and service commands.
 # ---------------------------------------------------------------------------
 ssh_tunnel_service_name: "ssh-tunnel"

@@ -61,6 +61,23 @@ log "UDP bridge started: :{{ b.local_port }}/udp → tunnel :{{ b.remote_port }}
 {% endif %}
 
 # ===========================================================================
+# TCP health check (optional)
+# Polls each remote_port via /dev/tcp to verify the tunnel is up.
+# Disabled when ssh_tunnel_health_check_ports is empty.
+# ===========================================================================
+{% if ssh_tunnel_health_check_ports | default([]) %}
+health_check() {
+    {% for p in ssh_tunnel_health_check_ports %}
+    if ! timeout 3 bash -c "echo >/dev/tcp/127.0.0.1/{{ p }}" 2>/dev/null; then
+        log "HEALTH: port {{ p }} unreachable on localhost"
+        return 1
+    fi
+    {% endfor %}
+    return 0
+}
+{% endif %}
+
+# ===========================================================================
 # Auto-reconnect SSH loop with exponential backoff
 # Backoff progression: 1s → 2s → 4s → 8s → 16s → 30s → 60s (cap)
 # On clean exit (e.g. manual service restart), backoff resets to 1s.
@@ -69,6 +86,11 @@ BACKOFF=1
 MAX_BACKOFF=60
 
 log "Starting reverse SSH tunnel to ${JUMP_HOST}:${SSH_PORT}"
+
+# Optional one-shot health check after first connection
+{% if ssh_tunnel_health_check_ports | default([]) %}
+FIRST_CHECK=true
+{% endif %}
 
 while true; do
     log "Connecting to ${JUMP_HOST}..."
@@ -88,6 +110,17 @@ while true; do
         "${JUMP_HOST}"; then
 
         log "Connection exited cleanly — will reconnect immediately"
+        {% if ssh_tunnel_health_check_ports | default([]) %}
+        # One-shot health check after first successful connection
+        if [ -n "${FIRST_CHECK:-}" ]; then
+            if health_check; then
+                log "HEALTH: all tunnel ports are reachable"
+            else
+                log "HEALTH WARNING: some ports unreachable — tunnel may be degraded"
+            fi
+            unset FIRST_CHECK
+        fi
+        {% endif %}
         BACKOFF=1
     else
         log "Connection failed or dropped. Reconnecting in ${BACKOFF}s..."
